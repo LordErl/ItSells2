@@ -5,6 +5,7 @@ import Logo from '../components/common/Logo'
 import anime from 'animejs'
 import PhotoUpload from '../components/PhotoUpload'
 import FaceRecognition from '../components/FaceRecognition'
+import { Camera } from 'lucide-react'
 
 export default function LoginPage() {
   const [showFaceRecognition, setShowFaceRecognition] = useState(false)
