@@ -1,20 +1,7 @@
 import { createContext, useContext, useReducer, useEffect } from 'react'
 import { AuthService } from '../services/authService'
 
-// Auth Context
-const AuthContext = createContext()
-
-// Auth Actions
-const AUTH_ACTIONS = {
-  LOGIN_START: 'LOGIN_START',
-  LOGIN_SUCCESS: 'LOGIN_SUCCESS',
-  LOGIN_FAILURE: 'LOGIN_FAILURE',
-  LOGOUT: 'LOGOUT',
-  SET_LOADING: 'SET_LOADING',
-  UPDATE_USER: 'UPDATE_USER'
-}
-
-// Initial State
+// Initial state
 const initialState = {
   user: null,
   isAuthenticated: false,
@@ -22,10 +9,24 @@ const initialState = {
   error: null
 }
 
-// Auth Reducer
+// Action types
+const AUTH_ACTIONS = {
+  LOGIN_START: 'LOGIN_START',
+  LOGIN_SUCCESS: 'LOGIN_SUCCESS',
+  LOGIN_FAILURE: 'LOGIN_FAILURE',
+  LOGOUT: 'LOGOUT',
+  SET_LOADING: 'SET_LOADING',
+  CLEAR_ERROR: 'CLEAR_ERROR',
+  REGISTER_START: 'REGISTER_START',
+  REGISTER_SUCCESS: 'REGISTER_SUCCESS',
+  REGISTER_FAILURE: 'REGISTER_FAILURE'
+}
+
+// Reducer
 function authReducer(state, action) {
   switch (action.type) {
     case AUTH_ACTIONS.LOGIN_START:
+    case AUTH_ACTIONS.REGISTER_START:
       return {
         ...state,
         loading: true,
@@ -33,6 +34,7 @@ function authReducer(state, action) {
       }
     
     case AUTH_ACTIONS.LOGIN_SUCCESS:
+    case AUTH_ACTIONS.REGISTER_SUCCESS:
       return {
         ...state,
         user: action.payload.user,
@@ -42,6 +44,7 @@ function authReducer(state, action) {
       }
     
     case AUTH_ACTIONS.LOGIN_FAILURE:
+    case AUTH_ACTIONS.REGISTER_FAILURE:
       return {
         ...state,
         user: null,
@@ -65,10 +68,10 @@ function authReducer(state, action) {
         loading: action.payload
       }
     
-    case AUTH_ACTIONS.UPDATE_USER:
+    case AUTH_ACTIONS.CLEAR_ERROR:
       return {
         ...state,
-        user: { ...state.user, ...action.payload }
+        error: null
       }
     
     default:
@@ -76,30 +79,32 @@ function authReducer(state, action) {
   }
 }
 
-// Auth Provider Component
+// Create context
+const AuthContext = createContext()
+
+// AuthProvider component
 export function AuthProvider({ children }) {
   const [state, dispatch] = useReducer(authReducer, initialState)
 
-  // Initialize auth state from localStorage
+  // Check for existing session on mount
   useEffect(() => {
-    const initializeAuth = async () => {
+    const checkAuth = async () => {
       try {
         const token = localStorage.getItem('auth_token')
         const userData = localStorage.getItem('user_data')
         
         if (token && userData) {
-          const user = JSON.parse(userData)
-          
           // Verify token validity
           const isValid = await AuthService.verifyToken(token)
           
           if (isValid) {
+            const user = JSON.parse(userData)
             dispatch({
               type: AUTH_ACTIONS.LOGIN_SUCCESS,
               payload: { user }
             })
           } else {
-            // Token expired, clear storage
+            // Token invalid, clear storage
             localStorage.removeItem('auth_token')
             localStorage.removeItem('user_data')
             dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false })
@@ -108,123 +113,171 @@ export function AuthProvider({ children }) {
           dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false })
         }
       } catch (error) {
-        console.error('Auth initialization error:', error)
+        console.error('Auth check error:', error)
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false })
       }
     }
 
-    initializeAuth()
+    checkAuth()
   }, [])
 
   // Login with CPF and Password
   const loginWithCredentials = async (cpf, password) => {
     dispatch({ type: AUTH_ACTIONS.LOGIN_START })
-    
-    const response = await AuthService.loginWithCredentials(cpf, password)
-    
-    if (response.success) {
-      const { user, token } = response.data
+
+    try {
+      const result = await AuthService.loginWithCredentials(cpf, password)
       
-      // Store auth data
-      localStorage.setItem('auth_token', token)
-      localStorage.setItem('user_data', JSON.stringify(user))
-      
-      dispatch({
-        type: AUTH_ACTIONS.LOGIN_SUCCESS,
-        payload: { user }
-      })
-      
-      return { success: true }
-    } else {
+      if (result.success) {
+        // Store auth data
+        localStorage.setItem('auth_token', result.data.token)
+        localStorage.setItem('user_data', JSON.stringify(result.data.user))
+        
+        dispatch({
+          type: AUTH_ACTIONS.LOGIN_SUCCESS,
+          payload: { user: result.data.user }
+        })
+        
+        return { success: true, data: result.data }
+      } else {
+        dispatch({
+          type: AUTH_ACTIONS.LOGIN_FAILURE,
+          payload: { error: result.error }
+        })
+        
+        return { success: false, error: result.error }
+      }
+    } catch (error) {
+      const errorMessage = 'Erro interno. Tente novamente.'
       dispatch({
         type: AUTH_ACTIONS.LOGIN_FAILURE,
-        payload: { error: response.error }
+        payload: { error: errorMessage }
       })
-      return { success: false, error: response.error }
+      
+      return { success: false, error: errorMessage }
     }
   }
 
   // Login with Face Recognition
   const loginWithFace = async (faceData) => {
     dispatch({ type: AUTH_ACTIONS.LOGIN_START })
-    
-    const response = await AuthService.loginWithFace(faceData)
-    
-    if (response.success) {
-      const { user, token } = response.data
+
+    try {
+      const result = await AuthService.loginWithFace(faceData)
       
-      localStorage.setItem('auth_token', token)
-      localStorage.setItem('user_data', JSON.stringify(user))
-      
-      dispatch({
-        type: AUTH_ACTIONS.LOGIN_SUCCESS,
-        payload: { user }
-      })
-      
-      return { success: true }
-    } else {
+      if (result.success) {
+        // Store auth data
+        localStorage.setItem('auth_token', result.data.token)
+        localStorage.setItem('user_data', JSON.stringify(result.data.user))
+        
+        dispatch({
+          type: AUTH_ACTIONS.LOGIN_SUCCESS,
+          payload: { user: result.data.user }
+        })
+        
+        return { success: true, data: result.data }
+      } else {
+        dispatch({
+          type: AUTH_ACTIONS.LOGIN_FAILURE,
+          payload: { error: result.error }
+        })
+        
+        return { success: false, error: result.error }
+      }
+    } catch (error) {
+      const errorMessage = 'Erro no reconhecimento facial. Tente novamente.'
       dispatch({
         type: AUTH_ACTIONS.LOGIN_FAILURE,
-        payload: { error: response.error }
+        payload: { error: errorMessage }
       })
-      return { success: false, error: response.error }
+      
+      return { success: false, error: errorMessage }
     }
   }
 
-  // Register new customer
-  const registerCustomer = async (customerData) => {
-    dispatch({ type: AUTH_ACTIONS.LOGIN_START })
-    
-    const response = await AuthService.registerCustomer(customerData)
-    
-    if (response.success) {
-      const { user, token } = response.data
+  // Register Customer with Photo
+  const registerWithPhoto = async (userData, photoFile) => {
+    dispatch({ type: AUTH_ACTIONS.REGISTER_START })
+
+    try {
+      console.log('AuthContext: Calling AuthService.registerWithPhoto', { userData, photoFile })
       
-      localStorage.setItem('auth_token', token)
-      localStorage.setItem('user_data', JSON.stringify(user))
+      const result = await AuthService.registerWithPhoto(userData, photoFile)
+      
+      console.log('AuthContext: AuthService result:', result)
+      
+      if (result.success) {
+        // Store auth data
+        localStorage.setItem('auth_token', result.data.token)
+        localStorage.setItem('user_data', JSON.stringify(result.data.user))
+        
+        dispatch({
+          type: AUTH_ACTIONS.REGISTER_SUCCESS,
+          payload: { user: result.data.user }
+        })
+        
+        return { success: true, data: result.data }
+      } else {
+        dispatch({
+          type: AUTH_ACTIONS.REGISTER_FAILURE,
+          payload: { error: result.error }
+        })
+        
+        return { success: false, error: result.error }
+      }
+    } catch (error) {
+      console.error('AuthContext: Register error:', error)
+      const errorMessage = error.message || 'Erro no cadastro. Tente novamente.'
       
       dispatch({
-        type: AUTH_ACTIONS.LOGIN_SUCCESS,
-        payload: { user }
+        type: AUTH_ACTIONS.REGISTER_FAILURE,
+        payload: { error: errorMessage }
       })
       
-      return { success: true }
-    } else {
-      dispatch({
-        type: AUTH_ACTIONS.LOGIN_FAILURE,
-        payload: { error: response.error }
-      })
-      return { success: false, error: response.error }
+      return { success: false, error: errorMessage }
     }
+  }
+
+  // Register Customer (legacy - without photo)
+  const registerCustomer = async (userData) => {
+    return await registerWithPhoto(userData, null)
   }
 
   // Logout
-  const logout = () => {
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('user_data')
-    dispatch({ type: AUTH_ACTIONS.LOGOUT })
+  const logout = async () => {
+    try {
+      await AuthService.logout()
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      // Clear local storage
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('user_data')
+      
+      dispatch({ type: AUTH_ACTIONS.LOGOUT })
+    }
   }
 
-  // Update user data
-  const updateUser = (userData) => {
-    dispatch({
-      type: AUTH_ACTIONS.UPDATE_USER,
-      payload: userData
-    })
-    
-    // Update localStorage
-    const currentUser = JSON.parse(localStorage.getItem('user_data') || '{}')
-    const updatedUser = { ...currentUser, ...userData }
-    localStorage.setItem('user_data', JSON.stringify(updatedUser))
+  // Clear error
+  const clearError = () => {
+    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR })
   }
 
+  // Context value
   const value = {
-    ...state,
+    // State
+    user: state.user,
+    isAuthenticated: state.isAuthenticated,
+    loading: state.loading,
+    error: state.error,
+    
+    // Actions
     loginWithCredentials,
     loginWithFace,
-    registerCustomer,
+    registerWithPhoto,  // ← FUNÇÃO PRINCIPAL
+    registerCustomer,   // ← FUNÇÃO LEGACY
     logout,
-    updateUser
+    clearError
   }
 
   return (
@@ -237,9 +290,11 @@ export function AuthProvider({ children }) {
 // Custom hook to use auth context
 export function useAuth() {
   const context = useContext(AuthContext)
+  
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider')
   }
+  
   return context
 }
 

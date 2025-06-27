@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../contexts/AuthContext'  // ← IMPORT CORRETO
 import Logo from '../components/common/Logo'
 import PhotoUpload from '../components/PhotoUpload'
 import { Eye, EyeOff, User, Mail, Camera, ArrowLeft } from 'lucide-react'
@@ -21,10 +21,19 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState('')
   const [step, setStep] = useState(1) // 1: dados básicos, 2: dados opcionais, 3: foto
   
-  const { registerCustomer, isAuthenticated, user } = useAuth()
+  // ← DESTRUCTURING CORRETO DO useAuth
+  const { registerWithPhoto, isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
   const formRef = useRef(null)
   const containerRef = useRef(null)
+
+  // Debug: Verificar se registerWithPhoto está disponível
+  useEffect(() => {
+    console.log('RegisterPage: registerWithPhoto available?', typeof registerWithPhoto)
+    if (typeof registerWithPhoto !== 'function') {
+      console.error('RegisterPage: registerWithPhoto is not a function!')
+    }
+  }, [registerWithPhoto])
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -93,6 +102,7 @@ export default function RegisterPage() {
 
   // Handle photo selection
   const handlePhotoSelect = (file, url) => {
+    console.log('Photo selected:', { file, url })
     setFormData(prev => ({
       ...prev,
       photo: file,
@@ -184,6 +194,11 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
+      // Verificar se registerWithPhoto está disponível
+      if (typeof registerWithPhoto !== 'function') {
+        throw new Error('Função de registro não está disponível. Recarregue a página.')
+      }
+
       // Prepare data for registration
       const userData = {
         cpf: formData.cpf.replace(/\D/g, ''),
@@ -200,10 +215,12 @@ export default function RegisterPage() {
       }
 
       console.log('Registering user with data:', userData)
+      console.log('Photo file:', formData.photo)
 
       // Register user
       const result = await registerWithPhoto(userData, formData.photo)
-
+      
+      console.log('Registration result:', result)
       
       if (result.success) {
         setSuccess('Conta criada com sucesso!')
