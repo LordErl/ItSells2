@@ -21,7 +21,7 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState('')
   const [step, setStep] = useState(1) // 1: dados básicos, 2: dados opcionais, 3: foto
   
-  const { registerWithPhoto, isAuthenticated, user } = useAuth()
+  const { registerCustomer, isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
   const formRef = useRef(null)
   const containerRef = useRef(null)
@@ -202,7 +202,7 @@ export default function RegisterPage() {
       console.log('Registering user with data:', userData)
 
       // Register user
-      const result = await registerWithPhoto(userData, formData.photo)
+      const result = await registerCustomer(userData)
       
       if (result.success) {
         setSuccess('Conta criada com sucesso!')
