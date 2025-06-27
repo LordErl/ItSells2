@@ -2,19 +2,24 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import PhotoUpload from '../components/PhotoUpload'
+import { Eye, EyeOff } from 'lucide-react'
 import anime from 'animejs'
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
     cpf: '',
     name: '',
+    email: '',
+    password: '',
     photo: null,
     photoUrl: null
   })
+  const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   
-  const { register } = useAuth()
+  const { registerWithPhoto } = useAuth()
   const navigate = useNavigate()
   const formRef = useRef(null)
 
@@ -96,10 +101,18 @@ export default function RegisterPage() {
     return true
   }
 
+  // Validate email
+  const validateEmail = (email) => {
+    if (!email) return true // Email is optional
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setSuccess('')
     setIsLoading(true)
 
     try {
@@ -113,33 +126,57 @@ export default function RegisterPage() {
         throw new Error('CPF inválido')
       }
 
-      // Prepare form data for submission
-      const submitData = new FormData()
-      submitData.append('cpf', formData.cpf.replace(/\D/g, ''))
-      submitData.append('name', formData.name.trim())
-      submitData.append('role', 'customer')
-      
-      if (formData.photo) {
-        submitData.append('photo', formData.photo)
+      // Validate email if provided
+      if (formData.email && !validateEmail(formData.email)) {
+        throw new Error('Email inválido')
       }
 
-      // Register user
-      await register(submitData)
-      
-      // Success animation
-      anime({
-        targets: formRef.current,
-        scale: [1, 1.05, 1],
-        duration: 600,
-        easing: 'easeInOutQuad'
-      })
+      // Validate password if provided
+      if (formData.password && formData.password.length < 6) {
+        throw new Error('Senha deve ter pelo menos 6 caracteres')
+      }
 
-      // Redirect to customer area
-      setTimeout(() => {
-        navigate('/customer')
-      }, 1000)
+      // Prepare data for registration
+      const userData = {
+        cpf: formData.cpf,
+        name: formData.name.trim()
+      }
+
+      // Add optional fields if provided
+      if (formData.email && formData.email.trim()) {
+        userData.email = formData.email.trim()
+      }
+
+      if (formData.password && formData.password.trim()) {
+        userData.password = formData.password.trim()
+      }
+
+      console.log('Registering user with data:', userData)
+
+      // Register user
+      const result = await registerWithPhoto(userData, formData.photo)
+      
+      if (result.success) {
+        setSuccess('Conta criada com sucesso!')
+        
+        // Success animation
+        anime({
+          targets: formRef.current,
+          scale: [1, 1.05, 1],
+          duration: 600,
+          easing: 'easeInOutQuad'
+        })
+
+        // Redirect to customer area
+        setTimeout(() => {
+          navigate('/customer')
+        }, 2000)
+      } else {
+        throw new Error(result.error || 'Erro ao criar conta')
+      }
 
     } catch (err) {
+      console.error('Registration error:', err)
       setError(err.message || 'Erro ao criar conta')
       
       // Error shake animation
@@ -170,6 +207,13 @@ export default function RegisterPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6" ref={formRef}>
+          {/* Success Message */}
+          {success && (
+            <div className="p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
+              <p className="text-green-400 text-sm">{success}</p>
+            </div>
+          )}
+
           {/* Error Message */}
           {error && (
             <div className="p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
@@ -210,6 +254,51 @@ export default function RegisterPage() {
             />
           </div>
 
+          {/* Email Field (Optional) */}
+          <div>
+            <label className="block text-sm font-medium text-gold mb-2">
+              Email (Opcional)
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              placeholder="seu@email.com"
+              className="luxury-input w-full"
+            />
+            <p className="text-gold/60 text-xs mt-1">
+              Para recuperação de conta e notificações
+            </p>
+          </div>
+
+          {/* Password Field (Optional) */}
+          <div>
+            <label className="block text-sm font-medium text-gold mb-2">
+              Senha (Opcional)
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder="Mínimo 6 caracteres"
+                className="luxury-input w-full pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gold/60 hover:text-gold"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+            <p className="text-gold/60 text-xs mt-1">
+              Ou use apenas reconhecimento facial
+            </p>
+          </div>
+
           {/* Photo Upload */}
           <PhotoUpload
             onPhotoSelect={handlePhotoSelect}
@@ -232,6 +321,12 @@ export default function RegisterPage() {
               <span>Criar Conta</span>
             )}
           </button>
+
+          {/* Info */}
+          <div className="text-center text-gold/60 text-xs">
+            <p>* Campos obrigatórios</p>
+            <p className="mt-1">Email e senha são opcionais para login por reconhecimento facial</p>
+          </div>
 
           {/* Back to Login */}
           <div className="text-center">

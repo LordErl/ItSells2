@@ -11,27 +11,38 @@ export class ImageUploadService {
    */
   static async uploadUserPhoto(file, userId, type = 'profile') {
     try {
+      // Ensure storage bucket exists
+      await this.ensureBucketExists()
+
       // Generate unique filename
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${userId}/${type}_${Date.now()}.${fileExt}`
-      const filePath = `user-photos/${fileName}`
+      const fileExt = file.name.split('.').pop() || 'jpg'
+      const timestamp = Date.now()
+      const fileName = `${type}_${timestamp}.${fileExt}`
+      const filePath = `${userId}/${fileName}`
+
+      console.log('Uploading file:', { fileName, filePath, fileSize: file.size })
 
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
         .from('user-images')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true // Allow overwrite
         })
 
       if (error) {
-        throw error
+        console.error('Upload error:', error)
+        throw new Error(`Erro no upload: ${error.message}`)
       }
+
+      console.log('Upload successful:', data)
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('user-images')
         .getPublicUrl(filePath)
+
+      console.log('Public URL generated:', publicUrl)
 
       return {
         url: publicUrl,
@@ -42,6 +53,46 @@ export class ImageUploadService {
     } catch (error) {
       console.error('Error uploading image:', error)
       throw new Error('Falha no upload da imagem: ' + error.message)
+    }
+  }
+
+  /**
+   * Ensure the storage bucket exists
+   */
+  static async ensureBucketExists() {
+    try {
+      // Check if bucket exists
+      const { data: buckets, error: listError } = await supabase.storage.listBuckets()
+      
+      if (listError) {
+        console.error('Error listing buckets:', listError)
+        return false
+      }
+
+      const bucketExists = buckets?.some(bucket => bucket.name === 'user-images')
+      
+      if (!bucketExists) {
+        console.log('Creating user-images bucket...')
+        
+        // Create bucket
+        const { data, error: createError } = await supabase.storage.createBucket('user-images', {
+          public: true,
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+          fileSizeLimit: 10485760 // 10MB
+        })
+
+        if (createError) {
+          console.error('Error creating bucket:', createError)
+          throw new Error('Não foi possível criar o bucket de imagens')
+        }
+
+        console.log('Bucket created successfully:', data)
+      }
+
+      return true
+    } catch (error) {
+      console.error('Error ensuring bucket exists:', error)
+      return false
     }
   }
 
@@ -57,7 +108,8 @@ export class ImageUploadService {
         .remove([filePath])
 
       if (error) {
-        throw error
+        console.error('Delete error:', error)
+        return false
       }
 
       return true
@@ -76,45 +128,57 @@ export class ImageUploadService {
    * @returns {Promise<File>}
    */
   static async compressImage(file, maxWidth = 800, maxHeight = 600, quality = 0.8) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')
       const img = new Image()
 
       img.onload = () => {
-        // Calculate new dimensions
-        let { width, height } = img
-        
-        if (width > height) {
-          if (width > maxWidth) {
-            height = (height * maxWidth) / width
-            width = maxWidth
+        try {
+          // Calculate new dimensions
+          let { width, height } = img
+          
+          if (width > height) {
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width
+              width = maxWidth
+            }
+          } else {
+            if (height > maxHeight) {
+              width = (width * maxHeight) / height
+              height = maxHeight
+            }
           }
-        } else {
-          if (height > maxHeight) {
-            width = (width * maxHeight) / height
-            height = maxHeight
-          }
+
+          // Set canvas dimensions
+          canvas.width = width
+          canvas.height = height
+
+          // Draw and compress
+          ctx.drawImage(img, 0, 0, width, height)
+          
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now()
+                })
+                resolve(compressedFile)
+              } else {
+                reject(new Error('Falha na compressão da imagem'))
+              }
+            },
+            'image/jpeg',
+            quality
+          )
+        } catch (error) {
+          reject(error)
         }
+      }
 
-        // Set canvas dimensions
-        canvas.width = width
-        canvas.height = height
-
-        // Draw and compress
-        ctx.drawImage(img, 0, 0, width, height)
-        
-        canvas.toBlob(
-          (blob) => {
-            const compressedFile = new File([blob], file.name, {
-              type: 'image/jpeg',
-              lastModified: Date.now()
-            })
-            resolve(compressedFile)
-          },
-          'image/jpeg',
-          quality
-        )
+      img.onerror = () => {
+        reject(new Error('Falha ao carregar imagem para compressão'))
       }
 
       img.src = URL.createObjectURL(file)
@@ -132,10 +196,10 @@ export class ImageUploadService {
       throw new Error('Arquivo deve ser uma imagem')
     }
 
-    // Check file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024
+    // Check file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024
     if (file.size > maxSize) {
-      throw new Error('Imagem deve ter no máximo 5MB')
+      throw new Error('Imagem deve ter no máximo 10MB')
     }
 
     // Check if it's a valid image by trying to load it
@@ -165,61 +229,35 @@ export class ImageUploadService {
    */
   static async processAndUploadPhoto(file, userId, type = 'profile') {
     try {
+      console.log('Processing photo upload:', { 
+        fileName: file.name, 
+        fileSize: file.size, 
+        userId, 
+        type 
+      })
+
       // Validate image
       await this.validateImage(file)
 
       // Compress image if needed
       let processedFile = file
       if (file.size > 1024 * 1024) { // If larger than 1MB, compress
-        processedFile = await this.compressImage(file)
+        console.log('Compressing image...')
+        processedFile = await this.compressImage(file, 1200, 900, 0.8)
+        console.log('Image compressed:', { 
+          originalSize: file.size, 
+          compressedSize: processedFile.size 
+        })
       }
 
       // Upload to storage
       const result = await this.uploadUserPhoto(processedFile, userId, type)
+      console.log('Upload completed:', result)
 
       return result
     } catch (error) {
       console.error('Error processing and uploading photo:', error)
       throw error
-    }
-  }
-
-  /**
-   * Create storage bucket if it doesn't exist
-   * @returns {Promise<boolean>}
-   */
-  static async initializeStorage() {
-    try {
-      // Check if bucket exists
-      const { data: buckets, error: listError } = await supabase.storage.listBuckets()
-      
-      if (listError) {
-        console.error('Error listing buckets:', listError)
-        return false
-      }
-
-      const bucketExists = buckets.some(bucket => bucket.name === 'user-images')
-      
-      if (!bucketExists) {
-        // Create bucket
-        const { error: createError } = await supabase.storage.createBucket('user-images', {
-          public: true,
-          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
-          fileSizeLimit: 5242880 // 5MB
-        })
-
-        if (createError) {
-          console.error('Error creating bucket:', createError)
-          return false
-        }
-
-        console.log('Storage bucket created successfully')
-      }
-
-      return true
-    } catch (error) {
-      console.error('Error initializing storage:', error)
-      return false
     }
   }
 
@@ -232,8 +270,8 @@ export class ImageUploadService {
     try {
       const { data, error } = await supabase.storage
         .from('user-images')
-        .list(`user-photos/${userId}/`, {
-          limit: 1,
+        .list(userId, {
+          limit: 10,
           sortBy: { column: 'created_at', order: 'desc' }
         })
 
@@ -241,15 +279,42 @@ export class ImageUploadService {
         return null
       }
 
-      const latestImage = data[0]
+      // Find the most recent profile image
+      const profileImage = data.find(file => file.name.includes('profile')) || data[0]
+      
       const { data: { publicUrl } } = supabase.storage
         .from('user-images')
-        .getPublicUrl(`user-photos/${userId}/${latestImage.name}`)
+        .getPublicUrl(`${userId}/${profileImage.name}`)
 
       return publicUrl
     } catch (error) {
       console.error('Error getting user profile image:', error)
       return null
+    }
+  }
+
+  /**
+   * List all images for a user
+   * @param {string} userId - User ID
+   * @returns {Promise<Array>}
+   */
+  static async listUserImages(userId) {
+    try {
+      const { data, error } = await supabase.storage
+        .from('user-images')
+        .list(userId, {
+          limit: 100,
+          sortBy: { column: 'created_at', order: 'desc' }
+        })
+
+      if (error) {
+        throw error
+      }
+
+      return data || []
+    } catch (error) {
+      console.error('Error listing user images:', error)
+      return []
     }
   }
 }
