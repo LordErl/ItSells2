@@ -217,6 +217,7 @@ export default function LoginPage() {
               onClose={() => setShowFaceRecognition(false)}
             />
           )}
+        </div>
 
         {/* Forms */}
         <div ref={formRef}>
