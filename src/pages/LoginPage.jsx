@@ -4,7 +4,9 @@ import { useAuth } from '../contexts/AuthContext'
 import Logo from '../components/common/Logo'
 import anime from 'animejs'
 import PhotoUpload from '../components/PhotoUpload'
+import FaceRecognition from '../components/FaceRecognition'
 
+const [showFaceRecognition, setShowFaceRecognition] = useState(false)
 
 export default function LoginPage() {
   const [loginMethod, setLoginMethod] = useState('credentials') // 'credentials', 'face', 'register'
@@ -196,23 +198,25 @@ export default function LoginPage() {
             Reconhecimento Facial
           </button>
           <button
-            onClick={() => setLoginMethod('register')}
-            className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-              loginMethod === 'register'
-                ? 'bg-neon-pink/20 text-neon-pink border border-neon-pink/30'
-                : 'bg-black/20 text-gold/60 border border-gold/10 hover:border-gold/20'
-            }`}
+            type="button"
+            onClick={() => setShowFaceRecognition(true)}
+            className="btn-luxury-outline w-full flex items-center justify-center space-x-2"
           >
-            Cadastrar
+            <Camera className="w-5 h-5" />
+            <span>Reconhecimento Facial</span>
           </button>
-        </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
-            <p className="text-red-400 text-sm">{error}</p>
-          </div>
-        )}
+          {/* Modal de Reconhecimento Facial */}
+          {showFaceRecognition && (
+            <FaceRecognition
+              onSuccess={(userData) => {
+                setShowFaceRecognition(false)
+                // Redirecionar baseado no role do usuário
+                navigate(`/${userData.user.role}`)
+              }}
+              onClose={() => setShowFaceRecognition(false)}
+            />
+          )}
 
         {/* Forms */}
         <div ref={formRef}>
