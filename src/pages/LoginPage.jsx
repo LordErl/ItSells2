@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import Logo from '../components/common/Logo'
 import anime from 'animejs'
+import PhotoUpload from '../components/PhotoUpload'
+
 
 export default function LoginPage() {
   const [loginMethod, setLoginMethod] = useState('credentials') // 'credentials', 'face', 'register'
@@ -317,13 +319,18 @@ export default function LoginPage() {
 
               <div>
                 <label className="block text-gold text-sm font-medium mb-2">
-                  Foto (Opcional)
+                  Identificação Facial
                 </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setFormData(prev => ({ ...prev, photo: e.target.files[0] }))}
-                  className="luxury-input w-full"
+                <PhotoUpload
+                  onPhotoSelect={(file, url) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      photo: file,
+                      photoUrl: url
+                    }))
+                  }}
+                  currentPhoto={formData.photoUrl}
+                  label="Upload Identificação Facial"
                 />
                 <p className="text-gold/60 text-xs mt-1">
                   Para reconhecimento facial futuro

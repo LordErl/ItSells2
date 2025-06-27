@@ -1,6 +1,8 @@
 import { supabase, TABLES, USER_ROLES, dbHelpers } from '../lib/supabase'
+import { ImageUploadService } from './imageUploadService'
 
-export class AuthService {
+export const AuthService = {
+
   // Login with CPF and password
   static async loginWithCredentials(cpf, password) {
     try {
@@ -333,6 +335,54 @@ export class AuthService {
   static async logout() {
     // In production, invalidate the session token on the server
     return { success: true }
+  }
+  static async registerWithPhoto(userData, photoFile) {
+    try {
+      // Criar usuário primeiro
+      const { data: user, error: userError } = await supabase.auth.signUp({
+        email: `${userData.cpf}@itsells.temp`, // Email temporário
+        password: userData.cpf, // Senha temporária
+        options: {
+          data: {
+            name: userData.name,
+            cpf: userData.cpf,
+            role: 'customer'
+          }
+        }
+      })
+
+      if (userError) throw userError
+
+      // Upload da foto se fornecida
+      let photoData = null
+      if (photoFile && user.user) {
+        photoData = await ImageUploadService.processAndUploadPhoto(
+          photoFile, 
+          user.user.id, 
+          'profile'
+        )
+      }
+
+      // Salvar dados do usuário na tabela users
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: user.user.id,
+          email: user.user.email,
+          name: userData.name,
+          cpf: userData.cpf,
+          role: 'customer',
+          photo_url: photoData?.url || null,
+          photo_path: photoData?.path || null
+        })
+
+      if (insertError) throw insertError
+
+      return user
+    } catch (error) {
+      console.error('Registration error:', error)
+      throw error
+    }
   }
 }
 
