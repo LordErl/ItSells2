@@ -202,7 +202,8 @@ export default function RegisterPage() {
       console.log('Registering user with data:', userData)
 
       // Register user
-      const result = await registerCustomer(userData)
+      const result = await registerWithPhoto(userData, formData.photo)
+
       
       if (result.success) {
         setSuccess('Conta criada com sucesso!')
