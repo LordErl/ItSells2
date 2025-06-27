@@ -1,47 +1,76 @@
-import { supabase, TABLES, USER_ROLES, dbHelpers } from '../lib/supabase'
+import { supabase, TABLES, USER_ROLES } from '../lib/supabase'
 import { ImageUploadService } from './imageUploadService'
 
 export const AuthService = {
-
-  // Login with CPF and password
+  /**
+   * Login with CPF and password
+   */
   async loginWithCredentials(cpf, password) {
     try {
-      // First, get user by CPF
-      const { data: userData, error: userError } = await supabase
+      console.log('AuthService: Login attempt with CPF:', cpf)
+
+      // Clean CPF
+      const cleanCPF = cpf.replace(/\D/g, '')
+
+      // Find user by CPF
+      const { data: users, error: userError } = await supabase
         .from(TABLES.USERS)
         .select('*')
-        .eq('cpf', cpf)
-        .single()
+        .eq('cpf', cleanCPF)
+        .limit(1)
 
-      if (userError || !userData) {
-        throw new Error('CPF não encontrado')
+      if (userError) {
+        console.error('AuthService: User query error:', userError)
+        throw new Error('Erro ao buscar usuário')
       }
 
-      // Check if user has password set
-      if (!userData.password) {
-        throw new Error('Usuário não possui senha cadastrada. Use reconhecimento facial ou cadastre uma senha.')
+      if (!users || users.length === 0) {
+        return {
+          success: false,
+          error: 'CPF não encontrado'
+        }
       }
 
-      // For demo purposes, we'll use a simple password check
-      // In production, use proper password hashing
-      if (userData.password !== password) {
-        throw new Error('Senha incorreta')
+      const user = users[0]
+
+      // Check if user has password
+      if (!user.password_hash) {
+        return {
+          success: false,
+          error: 'Usuário não possui senha. Use reconhecimento facial.'
+        }
       }
 
-      // Create session token
-      const sessionToken = await this.createSession(userData)
+      // Verify password (simplified - in production use proper hashing)
+      const isValidPassword = user.password_hash === password
 
-      // Remove password from response
-      const { password: _, ...userWithoutPassword } = userData
+      if (!isValidPassword) {
+        return {
+          success: false,
+          error: 'Senha incorreta'
+        }
+      }
+
+      // Generate session token
+      const token = this.generateToken(user.id)
 
       return {
         success: true,
         data: {
-          user: userWithoutPassword,
-          token: sessionToken
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            cpf: user.cpf,
+            role: user.role,
+            photo_url: user.photo_url
+          },
+          token
         }
       }
+
     } catch (error) {
+      console.error('AuthService: Login error:', error)
       return {
         success: false,
         error: error.message || 'Erro no login'
@@ -49,51 +78,55 @@ export const AuthService = {
     }
   },
 
-  // Login with face recognition
-  async loginWithFace(imageFile) {
+  /**
+   * Login with face recognition
+   */
+  async loginWithFace(faceData) {
     try {
-      if (!imageFile) {
-        throw new Error('Imagem não fornecida')
-      }
+      console.log('AuthService: Face login attempt')
 
-      // Get all users with face data
-      const { data: usersWithFaces, error: usersError } = await supabase
+      // Simulate face recognition (replace with actual face recognition logic)
+      const { data: users, error: userError } = await supabase
         .from(TABLES.USERS)
-        .select('id, name, cpf, photo_url, role')
+        .select('*')
         .not('photo_url', 'is', null)
-        .eq('active', true)
+        .not('face_data', 'is', null)
 
-      if (usersError) {
-        throw new Error('Erro ao buscar usuários com reconhecimento facial')
+      if (userError) {
+        console.error('AuthService: Face login query error:', userError)
+        throw new Error('Erro na busca por reconhecimento facial')
       }
 
-      if (!usersWithFaces || usersWithFaces.length === 0) {
-        throw new Error('Nenhum usuário com reconhecimento facial cadastrado')
+      if (!users || users.length === 0) {
+        return {
+          success: false,
+          error: 'Nenhum usuário com dados faciais encontrado'
+        }
       }
 
-      // In a real implementation, you would:
-      // 1. Extract face encoding from the input image
-      // 2. Compare with stored face encodings
-      // 3. Find the best match above a threshold
-      
-      // For demo purposes, we'll simulate face recognition
-      const recognizedUser = await this.simulateFaceRecognition(imageFile, usersWithFaces)
+      // For now, return the first user with face data (implement actual face matching)
+      const user = users[0]
 
-      if (!recognizedUser) {
-        throw new Error('Rosto não reconhecido. Tente novamente ou use CPF e senha.')
-      }
-
-      // Create session token
-      const sessionToken = await this.createSession(recognizedUser)
+      // Generate session token
+      const token = this.generateToken(user.id)
 
       return {
         success: true,
         data: {
-          user: recognizedUser,
-          token: sessionToken
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            cpf: user.cpf,
+            role: user.role,
+            photo_url: user.photo_url
+          },
+          token
         }
       }
+
     } catch (error) {
+      console.error('AuthService: Face login error:', error)
       return {
         success: false,
         error: error.message || 'Erro no reconhecimento facial'
@@ -101,352 +134,232 @@ export const AuthService = {
     }
   },
 
-  // Register with photo upload (corrected version)
+  /**
+   * Register customer with photo
+   */
   async registerWithPhoto(userData, photoFile) {
     try {
-      const { cpf, name, email, password } = userData
+      console.log('AuthService: Starting registration with photo...', {
+        userData,
+        hasPhoto: !!photoFile
+      })
 
       // Validate required fields
-      if (!cpf || !name) {
+      if (!userData.cpf || !userData.name) {
         throw new Error('CPF e nome são obrigatórios')
       }
 
-      // Validate CPF
-      if (!this.validateCPF(cpf)) {
-        throw new Error('CPF inválido')
-      }
+      // Clean CPF
+      const cleanCPF = userData.cpf.replace(/\D/g, '')
 
       // Check if CPF already exists
-      const { data: existingUser } = await supabase
+      const { data: existingUsers, error: checkError } = await supabase
         .from(TABLES.USERS)
         .select('id')
-        .eq('cpf', cpf)
-        .single()
+        .eq('cpf', cleanCPF)
+        .limit(1)
 
-      if (existingUser) {
+      if (checkError) {
+        console.error('AuthService: CPF check error:', checkError)
+        throw new Error('Erro ao verificar CPF')
+      }
+
+      if (existingUsers && existingUsers.length > 0) {
         throw new Error('CPF já cadastrado')
       }
 
-      // Generate unique user ID
-      const userId = crypto.randomUUID()
-
       // Upload photo if provided
-      let photoData = null
+      let photoUrl = null
+      let photoPath = null
+      let faceData = null
+
       if (photoFile) {
-        try {
-          photoData = await ImageUploadService.processAndUploadPhoto(
-            photoFile, 
-            userId, 
-            'profile'
-          )
-          console.log('Photo uploaded successfully:', photoData)
-        } catch (uploadError) {
-          console.error('Photo upload failed:', uploadError)
-          // Continue without photo if upload fails
+        console.log('AuthService: Uploading photo...')
+        
+        const uploadResult = await ImageUploadService.uploadImage(photoFile, null, true)
+        
+        console.log('AuthService: Photo upload result:', uploadResult)
+
+        if (uploadResult.success) {
+          photoUrl = uploadResult.data.url
+          photoPath = uploadResult.data.path
+          
+          // Generate face data for recognition (simplified)
+          faceData = {
+            uploaded_at: new Date().toISOString(),
+            file_name: uploadResult.data.fileName,
+            file_size: uploadResult.data.size
+          }
+          
+          console.log('AuthService: Photo uploaded successfully:', {
+            photoUrl,
+            photoPath,
+            faceData
+          })
+        } else {
+          console.error('AuthService: Photo upload failed:', uploadResult.error)
+          throw new Error(`Erro no upload da foto: ${uploadResult.error}`)
         }
       }
 
       // Prepare user data
-      const newUserData = {
-        id: userId,
-        name: name.trim(),
-        cpf: cpf.replace(/\D/g, ''), // Store only numbers
-        role: 'customer',
-        photo_url: photoData?.url || null,
-        photo_path: photoData?.path || null,
-        active: true,
-        created_at: new Date().toISOString()
+      const userInsertData = {
+        cpf: cleanCPF,
+        name: userData.name.trim(),
+        role: USER_ROLES.CUSTOMER,
+        photo_url: photoUrl,
+        photo_path: photoPath,
+        face_data: faceData
       }
 
-      // Add optional fields if provided
-      if (email && email.trim()) {
-        newUserData.email = email.trim().toLowerCase()
+      // Add optional fields
+      if (userData.email && userData.email.trim()) {
+        userInsertData.email = userData.email.trim()
       }
 
-      if (password && password.trim()) {
-        // In production, hash the password
-        newUserData.password = password.trim()
+      if (userData.password && userData.password.trim()) {
+        userInsertData.password_hash = userData.password.trim() // In production, hash this
       }
 
-      // Insert user into database
-      const { data: createdUser, error: insertError } = await supabase
+      console.log('AuthService: Inserting user data:', userInsertData)
+
+      // Insert user
+      const { data: newUser, error: userInsertError } = await supabase
         .from(TABLES.USERS)
-        .insert([newUserData])
+        .insert([userInsertData])
         .select()
         .single()
 
-      if (insertError) {
-        console.error('Database insert error:', insertError)
-        throw new Error('Erro ao criar usuário: ' + insertError.message)
+      if (userInsertError) {
+        console.error('AuthService: User insert error:', userInsertError)
+        
+        // If user creation failed and photo was uploaded, clean up
+        if (photoPath) {
+          console.log('AuthService: Cleaning up uploaded photo due to user creation failure')
+          await ImageUploadService.deleteImage(photoPath)
+        }
+        
+        throw new Error('Erro ao criar usuário')
       }
+
+      console.log('AuthService: User created successfully:', newUser)
 
       // Create customer account
-      await this.createCustomerAccount(userId)
-
-      // Store face data if photo was uploaded
-      if (photoData) {
-        await this.storeFaceData(userId, photoData.url)
+      const customerData = {
+        user_id: newUser.id,
+        account_balance: 0,
+        loyalty_points: 0,
+        preferences: {}
       }
 
-      // Create session token
-      const sessionToken = await this.createSession(createdUser)
+      console.log('AuthService: Creating customer account:', customerData)
 
-      return {
+      const { data: customerAccount, error: customerError } = await supabase
+        .from(TABLES.CUSTOMER_ACCOUNTS)
+        .insert([customerData])
+        .select()
+        .single()
+
+      if (customerError) {
+        console.error('AuthService: Customer account creation error:', customerError)
+        
+        // Clean up user and photo if customer account creation fails
+        await supabase.from(TABLES.USERS).delete().eq('id', newUser.id)
+        
+        if (photoPath) {
+          await ImageUploadService.deleteImage(photoPath)
+        }
+        
+        throw new Error('Erro ao criar conta do cliente')
+      }
+
+      console.log('AuthService: Customer account created successfully:', customerAccount)
+
+      // Generate session token
+      const token = this.generateToken(newUser.id)
+
+      const result = {
         success: true,
         data: {
-          user: createdUser,
-          token: sessionToken,
-          photoUploaded: !!photoData
+          user: {
+            id: newUser.id,
+            name: newUser.name,
+            email: newUser.email,
+            cpf: newUser.cpf,
+            role: newUser.role,
+            photo_url: newUser.photo_url,
+            photo_path: newUser.photo_path
+          },
+          customerAccount,
+          token
         }
       }
+
+      console.log('AuthService: Registration completed successfully:', result)
+      return result
+
     } catch (error) {
-      console.error('Registration error:', error)
+      console.error('AuthService: Registration error:', error)
       return {
         success: false,
-        error: error.message || 'Erro ao criar conta'
+        error: error.message || 'Erro no cadastro'
       }
     }
   },
 
-  // Update user with optional email and password
-  async updateUserCredentials(userId, email, password) {
-    try {
-      const updates = {
-        updated_at: new Date().toISOString()
-      }
-
-      if (email && email.trim()) {
-        updates.email = email.trim().toLowerCase()
-      }
-
-      if (password && password.trim()) {
-        // In production, hash the password
-        updates.password = password.trim()
-      }
-
-      const { data: updatedUser, error } = await supabase
-        .from(TABLES.USERS)
-        .update(updates)
-        .eq('id', userId)
-        .select()
-        .single()
-
-      if (error) {
-        throw error
-      }
-
-      return {
-        success: true,
-        data: updatedUser
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message || 'Erro ao atualizar credenciais'
-      }
-    }
+  /**
+   * Register customer (legacy - without photo)
+   */
+  async registerCustomer(userData) {
+    return await this.registerWithPhoto(userData, null)
   },
 
-  // Simulate face recognition (replace with real implementation)
-  async simulateFaceRecognition(imageFile, usersWithFaces) {
-    try {
-      // In a real implementation, you would:
-      // 1. Use face-api.js or similar library
-      // 2. Extract face descriptors from the input image
-      // 3. Compare with stored descriptors
-      // 4. Return the best match above a confidence threshold
-
-      // For demo purposes, we'll return a random user
-      // In production, replace this with actual face recognition
-      
-      console.log('Simulating face recognition for', usersWithFaces.length, 'users')
-      
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // For demo: return the first user (in production, this would be the matched user)
-      if (usersWithFaces.length > 0) {
-        return usersWithFaces[0]
-      }
-      
-      return null
-    } catch (error) {
-      console.error('Face recognition simulation error:', error)
-      return null
-    }
-  },
-
-  // Verify session token
+  /**
+   * Verify token
+   */
   async verifyToken(token) {
     try {
-      if (!token || !token.startsWith('session_')) {
-        return false
-      }
+      // Simple token verification (implement proper JWT verification in production)
+      const parts = token.split('.')
+      if (parts.length !== 3) return false
 
-      const userId = token.split('_')[1]
-      
-      const { data: user, error } = await supabase
-        .from(TABLES.USERS)
-        .select('*')
-        .eq('id', userId)
-        .eq('active', true)
-        .single()
+      const payload = JSON.parse(atob(parts[1]))
+      const now = Date.now() / 1000
 
-      return !error && user
+      return payload.exp > now
     } catch (error) {
+      console.error('AuthService: Token verification error:', error)
       return false
     }
   },
 
-  // Get user by ID
-  async getUserById(userId) {
-    try {
-      const { data: user, error } = await supabase
-        .from(TABLES.USERS)
-        .select('*')
-        .eq('id', userId)
-        .single()
-
-      if (error) {
-        throw error
-      }
-
-      return { success: true, data: user }
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message || 'Usuário não encontrado'
-      }
-    }
-  },
-
-  // Update user data
-  async updateUser(userId, updates) {
-    try {
-      const { data: user, error } = await supabase
-        .from(TABLES.USERS)
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId)
-        .select()
-        .single()
-
-      if (error) {
-        throw error
-      }
-
-      return { success: true, data: user }
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message || 'Erro ao atualizar usuário'
-      }
-    }
-  },
-
-  // Create session token
-  async createSession(user) {
-    return `session_${user.id}_${Date.now()}`
-  },
-
-  // Store face data for recognition
-  async storeFaceData(userId, photoUrl) {
-    try {
-      // In production, extract face encodings from photo
-      const faceEncoding = await this.extractFaceEncoding(photoUrl)
-
-      const { error } = await supabase
-        .from(TABLES.FACE_DATA)
-        .insert([{
-          user_id: userId,
-          face_encoding: faceEncoding,
-          photo_url: photoUrl,
-          created_at: new Date().toISOString()
-        }])
-
-      if (error) {
-        console.error('Error storing face data:', error)
-        return false
-      }
-
-      return true
-    } catch (error) {
-      console.error('Error storing face data:', error)
-      return false
-    }
-  },
-
-  // Create customer account
-  async createCustomerAccount(userId) {
-    try {
-      const { error } = await supabase
-        .from(TABLES.CUSTOMER_ACCOUNTS)
-        .insert([{
-          user_id: userId,
-          current_bill: 0,
-          total_spent: 0,
-          visit_count: 0,
-          created_at: new Date().toISOString()
-        }])
-
-      if (error) {
-        console.error('Error creating customer account:', error)
-        return false
-      }
-
-      return true
-    } catch (error) {
-      console.error('Error creating customer account:', error)
-      return false
-    }
-  },
-
-  // Extract face encoding (mock implementation)
-  async extractFaceEncoding(photoUrl) {
-    // In production, use face-api.js or similar library
-    return `face_encoding_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  },
-
-  // Validate CPF
-  validateCPF(cpf) {
-    cpf = cpf.replace(/[^\d]/g, '')
-    
-    if (cpf.length !== 11) return false
-    if (/^(\d)\1{10}$/.test(cpf)) return false
-    
-    let sum = 0
-    for (let i = 0; i < 9; i++) {
-      sum += parseInt(cpf.charAt(i)) * (10 - i)
-    }
-    
-    let remainder = 11 - (sum % 11)
-    if (remainder === 10 || remainder === 11) remainder = 0
-    if (remainder !== parseInt(cpf.charAt(9))) return false
-    
-    sum = 0
-    for (let i = 0; i < 10; i++) {
-      sum += parseInt(cpf.charAt(i)) * (11 - i)
-    }
-    
-    remainder = 11 - (sum % 11)
-    if (remainder === 10 || remainder === 11) remainder = 0
-    if (remainder !== parseInt(cpf.charAt(10))) return false
-    
-    return true
-  },
-
-  // Logout
+  /**
+   * Logout
+   */
   async logout() {
     try {
+      // Clear any server-side session if needed
+      console.log('AuthService: Logging out user')
       return { success: true }
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.message 
-      }
+      console.error('AuthService: Logout error:', error)
+      return { success: false, error: error.message }
     }
+  },
+
+  /**
+   * Generate session token
+   */
+  generateToken(userId) {
+    // Simple token generation (use proper JWT in production)
+    const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+    const payload = btoa(JSON.stringify({
+      userId,
+      exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
+    }))
+    const signature = btoa(`signature_${userId}_${Date.now()}`)
+
+    return `${header}.${payload}.${signature}`
   }
 }
 
