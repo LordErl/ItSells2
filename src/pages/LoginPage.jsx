@@ -6,9 +6,8 @@ import anime from 'animejs'
 import PhotoUpload from '../components/PhotoUpload'
 import FaceRecognition from '../components/FaceRecognition'
 
-const [showFaceRecognition, setShowFaceRecognition] = useState(false)
-
 export default function LoginPage() {
+  const [showFaceRecognition, setShowFaceRecognition] = useState(false)
   const [loginMethod, setLoginMethod] = useState('credentials') // 'credentials', 'face', 'register'
   const [formData, setFormData] = useState({
     cpf: '',
