@@ -5,6 +5,7 @@ import { StoreProvider } from './contexts/StoreContext'
 
 // Components
 import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'  // ← ADICIONADO
 import AdminDashboard from './pages/AdminDashboard'
 import StaffDashboard from './pages/StaffDashboard'
 import CustomerMenu from './pages/CustomerMenu'
@@ -43,6 +44,7 @@ function AppContent() {
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />  {/* ← ADICIONADO */}
         <Route path="/qr-scan" element={<QRScanner />} />
         
         {/* Protected Routes */}

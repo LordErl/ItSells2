@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import Logo from '../components/common/Logo'
 import PhotoUpload from '../components/PhotoUpload'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, User, Mail, Camera, ArrowLeft } from 'lucide-react'
 import anime from 'animejs'
 
 export default function RegisterPage() {
@@ -18,24 +19,49 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [step, setStep] = useState(1) // 1: dados básicos, 2: dados opcionais, 3: foto
   
-  const { registerWithPhoto } = useAuth()
+  const { registerWithPhoto, isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
   const formRef = useRef(null)
+  const containerRef = useRef(null)
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const redirectPath = user.role === 'admin' ? '/admin' :
+                          user.role === 'staff' ? '/staff' :
+                          '/customer'
+      navigate(redirectPath)
+    }
+  }, [isAuthenticated, user, navigate])
 
   // Animation on mount
   useEffect(() => {
-    if (formRef.current) {
+    if (containerRef.current) {
       anime({
-        targets: formRef.current.children,
+        targets: containerRef.current,
         translateY: [50, 0],
         opacity: [0, 1],
-        delay: anime.stagger(100),
         duration: 800,
         easing: 'easeOutExpo'
       })
     }
   }, [])
+
+  // Animation on step change
+  useEffect(() => {
+    if (formRef.current) {
+      anime({
+        targets: formRef.current.children,
+        translateX: [30, 0],
+        opacity: [0, 1],
+        delay: anime.stagger(100),
+        duration: 600,
+        easing: 'easeOutExpo'
+      })
+    }
+  }, [step])
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -43,15 +69,6 @@ export default function RegisterPage() {
     setFormData(prev => ({
       ...prev,
       [name]: value
-    }))
-  }
-
-  // Handle photo selection
-  const handlePhotoSelect = (file, url) => {
-    setFormData(prev => ({
-      ...prev,
-      photo: file,
-      photoUrl: url
     }))
   }
 
@@ -71,6 +88,15 @@ export default function RegisterPage() {
     setFormData(prev => ({
       ...prev,
       cpf: formatted
+    }))
+  }
+
+  // Handle photo selection
+  const handlePhotoSelect = (file, url) => {
+    setFormData(prev => ({
+      ...prev,
+      photo: file,
+      photoUrl: url
     }))
   }
 
@@ -108,6 +134,48 @@ export default function RegisterPage() {
     return emailRegex.test(email)
   }
 
+  // Handle next step
+  const handleNextStep = () => {
+    setError('')
+    
+    if (step === 1) {
+      // Validate required fields
+      if (!formData.cpf || !formData.name) {
+        setError('CPF e nome são obrigatórios')
+        return
+      }
+
+      // Validate CPF format
+      if (!validateCPF(formData.cpf)) {
+        setError('CPF inválido')
+        return
+      }
+
+      setStep(2)
+    } else if (step === 2) {
+      // Validate optional fields if provided
+      if (formData.email && !validateEmail(formData.email)) {
+        setError('Email inválido')
+        return
+      }
+
+      if (formData.password && formData.password.length < 6) {
+        setError('Senha deve ter pelo menos 6 caracteres')
+        return
+      }
+
+      setStep(3)
+    }
+  }
+
+  // Handle previous step
+  const handlePrevStep = () => {
+    setError('')
+    if (step > 1) {
+      setStep(step - 1)
+    }
+  }
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -116,29 +184,9 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      // Validate required fields
-      if (!formData.cpf || !formData.name) {
-        throw new Error('CPF e nome são obrigatórios')
-      }
-
-      // Validate CPF format
-      if (!validateCPF(formData.cpf)) {
-        throw new Error('CPF inválido')
-      }
-
-      // Validate email if provided
-      if (formData.email && !validateEmail(formData.email)) {
-        throw new Error('Email inválido')
-      }
-
-      // Validate password if provided
-      if (formData.password && formData.password.length < 6) {
-        throw new Error('Senha deve ter pelo menos 6 caracteres')
-      }
-
       // Prepare data for registration
       const userData = {
-        cpf: formData.cpf,
+        cpf: formData.cpf.replace(/\D/g, ''),
         name: formData.name.trim()
       }
 
@@ -167,9 +215,9 @@ export default function RegisterPage() {
           easing: 'easeInOutQuad'
         })
 
-        // Redirect to customer area
+        // Redirect to login with success message
         setTimeout(() => {
-          navigate('/customer')
+          navigate('/login?registered=true')
         }, 2000)
       } else {
         throw new Error(result.error || 'Erro ao criar conta')
@@ -193,152 +241,237 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen animated-bg flex items-center justify-center p-4">
-      <div className="glass-panel w-full max-w-md mx-auto">
+      <div ref={containerRef} className="glass-panel w-full max-w-md mx-auto">
         {/* Header */}
         <div className="text-center p-6 border-b border-gold/20">
-          <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center">
-            <span className="text-2xl font-bold text-black">It$</span>
+          <div className="mb-4">
+            <Logo size="lg" animated={true} />
           </div>
-          <h1 className="text-2xl font-bold text-gold-gradient mb-2">
-            It$ell's
+          <h1 className="text-2xl font-bold mb-2">
+            <span className="text-gold">It</span>
+            <span className="text-green-400 text-3xl">$</span>
+            <span className="text-gold">ell's</span>
           </h1>
           <p className="text-gold/80">Criar Nova Conta</p>
+          
+          {/* Progress indicator */}
+          <div className="flex justify-center mt-4 space-x-2">
+            {[1, 2, 3].map((stepNum) => (
+              <div
+                key={stepNum}
+                className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                  stepNum <= step 
+                    ? 'bg-gold' 
+                    : 'bg-gold/20'
+                }`}
+              />
+            ))}
+          </div>
+          <p className="text-gold/60 text-xs mt-2">
+            Passo {step} de 3
+          </p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6" ref={formRef}>
+        <div className="p-6">
           {/* Success Message */}
           {success && (
-            <div className="p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
+            <div className="mb-4 p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
               <p className="text-green-400 text-sm">{success}</p>
             </div>
           )}
 
           {/* Error Message */}
           {error && (
-            <div className="p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
+            <div className="mb-4 p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
               <p className="text-red-400 text-sm">{error}</p>
             </div>
           )}
 
-          {/* CPF Field */}
-          <div>
-            <label className="block text-sm font-medium text-gold mb-2">
-              CPF *
-            </label>
-            <input
-              type="text"
-              name="cpf"
-              value={formData.cpf}
-              onChange={handleCPFChange}
-              placeholder="000.000.000-00"
-              maxLength={14}
-              className="luxury-input w-full"
-              required
-            />
-          </div>
+          <form onSubmit={handleSubmit} ref={formRef}>
+            {/* Step 1: Basic Information */}
+            {step === 1 && (
+              <div className="space-y-6">
+                <div className="text-center mb-6">
+                  <User className="w-12 h-12 text-gold mx-auto mb-2" />
+                  <h3 className="text-lg font-semibold text-gold">Dados Básicos</h3>
+                  <p className="text-gold/60 text-sm">Informações obrigatórias</p>
+                </div>
 
-          {/* Name Field */}
-          <div>
-            <label className="block text-sm font-medium text-gold mb-2">
-              Nome Completo *
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              placeholder="Digite seu nome completo"
-              className="luxury-input w-full"
-              required
-            />
-          </div>
+                {/* CPF Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gold mb-2">
+                    CPF *
+                  </label>
+                  <input
+                    type="text"
+                    name="cpf"
+                    value={formData.cpf}
+                    onChange={handleCPFChange}
+                    placeholder="000.000.000-00"
+                    maxLength={14}
+                    className="luxury-input w-full"
+                    required
+                  />
+                </div>
 
-          {/* Email Field (Optional) */}
-          <div>
-            <label className="block text-sm font-medium text-gold mb-2">
-              Email (Opcional)
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              placeholder="seu@email.com"
-              className="luxury-input w-full"
-            />
-            <p className="text-gold/60 text-xs mt-1">
-              Para recuperação de conta e notificações
-            </p>
-          </div>
+                {/* Name Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gold mb-2">
+                    Nome Completo *
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="Digite seu nome completo"
+                    className="luxury-input w-full"
+                    required
+                  />
+                </div>
 
-          {/* Password Field (Optional) */}
-          <div>
-            <label className="block text-sm font-medium text-gold mb-2">
-              Senha (Opcional)
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                placeholder="Mínimo 6 caracteres"
-                className="luxury-input w-full pr-12"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gold/60 hover:text-gold"
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-            <p className="text-gold/60 text-xs mt-1">
-              Ou use apenas reconhecimento facial
-            </p>
-          </div>
-
-          {/* Photo Upload */}
-          <PhotoUpload
-            onPhotoSelect={handlePhotoSelect}
-            currentPhoto={formData.photoUrl}
-            label="Foto (Opcional)"
-          />
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="btn-luxury w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-          >
-            {isLoading ? (
-              <>
-                <div className="luxury-spinner"></div>
-                <span>Criando conta...</span>
-              </>
-            ) : (
-              <span>Criar Conta</span>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  className="btn-luxury w-full"
+                >
+                  Continuar
+                </button>
+              </div>
             )}
-          </button>
 
-          {/* Info */}
-          <div className="text-center text-gold/60 text-xs">
-            <p>* Campos obrigatórios</p>
-            <p className="mt-1">Email e senha são opcionais para login por reconhecimento facial</p>
-          </div>
+            {/* Step 2: Optional Information */}
+            {step === 2 && (
+              <div className="space-y-6">
+                <div className="text-center mb-6">
+                  <Mail className="w-12 h-12 text-neon-cyan mx-auto mb-2" />
+                  <h3 className="text-lg font-semibold text-gold">Dados Opcionais</h3>
+                  <p className="text-gold/60 text-sm">Para recuperação e notificações</p>
+                </div>
 
-          {/* Back to Login */}
-          <div className="text-center">
+                {/* Email Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gold mb-2">
+                    Email (Opcional)
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="seu@email.com"
+                    className="luxury-input w-full"
+                  />
+                  <p className="text-gold/60 text-xs mt-1">
+                    Para recuperação de conta e notificações
+                  </p>
+                </div>
+
+                {/* Password Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gold mb-2">
+                    Senha (Opcional)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      placeholder="Mínimo 6 caracteres"
+                      className="luxury-input w-full pr-12"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gold/60 hover:text-gold"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  <p className="text-gold/60 text-xs mt-1">
+                    Ou use apenas reconhecimento facial
+                  </p>
+                </div>
+
+                <div className="flex space-x-3">
+                  <button
+                    type="button"
+                    onClick={handlePrevStep}
+                    className="btn-luxury-outline flex-1"
+                  >
+                    Voltar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextStep}
+                    className="btn-luxury flex-1"
+                  >
+                    Continuar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Photo */}
+            {step === 3 && (
+              <div className="space-y-6">
+                <div className="text-center mb-6">
+                  <Camera className="w-12 h-12 text-neon-pink mx-auto mb-2" />
+                  <h3 className="text-lg font-semibold text-gold">Identificação Facial</h3>
+                  <p className="text-gold/60 text-sm">Para reconhecimento futuro</p>
+                </div>
+
+                {/* Photo Upload */}
+                <PhotoUpload
+                  onPhotoSelect={handlePhotoSelect}
+                  currentPhoto={formData.photoUrl}
+                  label="Tire uma selfie ou escolha uma foto"
+                />
+
+                <p className="text-gold/60 text-xs text-center">
+                  A foto é opcional, mas recomendada para usar o reconhecimento facial
+                </p>
+
+                <div className="flex space-x-3">
+                  <button
+                    type="button"
+                    onClick={handlePrevStep}
+                    className="btn-luxury-outline flex-1"
+                  >
+                    Voltar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="btn-luxury flex-1 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="luxury-spinner"></div>
+                        <span>Criando...</span>
+                      </>
+                    ) : (
+                      <span>Criar Conta</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </form>
+
+          {/* Footer */}
+          <div className="text-center mt-6 pt-6 border-t border-gold/20">
             <button
-              type="button"
               onClick={() => navigate('/login')}
-              className="text-gold/80 hover:text-gold text-sm underline"
+              className="text-gold/80 hover:text-gold text-sm underline flex items-center justify-center space-x-1 mx-auto"
             >
-              Já tem conta? Fazer login
+              <ArrowLeft className="w-4 h-4" />
+              <span>Já tem conta? Fazer login</span>
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )
