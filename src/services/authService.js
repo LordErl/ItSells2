@@ -4,7 +4,7 @@ import { ImageUploadService } from './imageUploadService'
 export const AuthService = {
 
   // Login with CPF and password
-  static async loginWithCredentials(cpf, password) {
+  async loginWithCredentials(cpf, password) {
     try {
       // First, get user by CPF
       const { data: userData, error: userError } = await supabase
@@ -42,10 +42,10 @@ export const AuthService = {
         error: dbHelpers.handleError(error)
       }
     }
-  }
+  },
 
   // Login with face recognition
-  static async loginWithFace(faceData) {
+  async loginWithFace(faceData) {
     try {
       // Get face data from database for comparison
       const { data: faceRecords, error: faceError } = await supabase
@@ -83,10 +83,10 @@ export const AuthService = {
         error: dbHelpers.handleError(error)
       }
     }
-  }
+  },
 
-  // Register new customer
-  static async registerCustomer(customerData) {
+  // Register new customer (simplified version)
+  async registerCustomer(customerData) {
     try {
       const { cpf, name, photo } = customerData
 
@@ -149,10 +149,103 @@ export const AuthService = {
         error: dbHelpers.handleError(error)
       }
     }
-  }
+  },
+
+  // Register with photo upload (integrated version)
+  async registerWithPhoto(userData, photoFile) {
+    try {
+      const { cpf, name } = userData
+
+      // Validate CPF
+      if (!this.validateCPF(cpf)) {
+        throw new Error('CPF inválido')
+      }
+
+      // Check if CPF already exists
+      const { data: existingUser } = await supabase
+        .from(TABLES.USERS)
+        .select('id')
+        .eq('cpf', cpf)
+        .single()
+
+      if (existingUser) {
+        throw new Error('CPF já cadastrado')
+      }
+
+      // Create user with Supabase Auth (for authentication)
+      const { data: authUser, error: authError } = await supabase.auth.signUp({
+        email: `${cpf}@itsells.temp`, // Temporary email
+        password: cpf, // Temporary password
+        options: {
+          data: {
+            name: name,
+            cpf: cpf,
+            role: 'customer'
+          }
+        }
+      })
+
+      if (authError) throw authError
+
+      // Upload photo if provided
+      let photoData = null
+      if (photoFile && authUser.user) {
+        photoData = await ImageUploadService.processAndUploadPhoto(
+          photoFile, 
+          authUser.user.id, 
+          'profile'
+        )
+      }
+
+      // Save user data to users table
+      const { data: userData, error: insertError } = await supabase
+        .from(TABLES.USERS)
+        .insert({
+          id: authUser.user.id,
+          email: authUser.user.email,
+          name: name,
+          cpf: cpf,
+          role: 'customer',
+          photo_url: photoData?.url || null,
+          photo_path: photoData?.path || null,
+          active: true,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+      if (insertError) throw insertError
+
+      // Store face data if photo is provided
+      if (photoData) {
+        await this.storeFaceData(authUser.user.id, photoData.url)
+      }
+
+      // Create customer account
+      await this.createCustomerAccount(authUser.user.id)
+
+      // Create session token
+      const sessionToken = await this.createSession(userData)
+
+      return {
+        success: true,
+        data: {
+          user: userData,
+          token: sessionToken,
+          authUser: authUser.user
+        }
+      }
+    } catch (error) {
+      console.error('Registration error:', error)
+      return {
+        success: false,
+        error: error.message || 'Erro ao criar conta'
+      }
+    }
+  },
 
   // Verify session token
-  static async verifyToken(token) {
+  async verifyToken(token) {
     try {
       // In production, verify JWT token properly
       if (!token || !token.startsWith('session_')) {
@@ -172,10 +265,10 @@ export const AuthService = {
     } catch (error) {
       return false
     }
-  }
+  },
 
   // Get user by ID
-  static async getUserById(userId) {
+  async getUserById(userId) {
     try {
       const { data: user, error } = await supabase
         .from(TABLES.USERS)
@@ -194,10 +287,10 @@ export const AuthService = {
         error: dbHelpers.handleError(error)
       }
     }
-  }
+  },
 
   // Update user data
-  static async updateUser(userId, updates) {
+  async updateUser(userId, updates) {
     try {
       const { data: user, error } = await supabase
         .from(TABLES.USERS)
@@ -220,26 +313,26 @@ export const AuthService = {
         error: dbHelpers.handleError(error)
       }
     }
-  }
+  },
 
   // Create session token (simplified for demo)
-  static async createSession(user) {
+  async createSession(user) {
     // In production, create proper JWT token
     return `session_${user.id}_${Date.now()}`
-  }
+  },
 
   // Store face data for recognition
-  static async storeFaceData(userId, photoData) {
+  async storeFaceData(userId, photoUrl) {
     try {
       // In production, extract face encodings from photo
-      const faceEncoding = await this.extractFaceEncoding(photoData)
+      const faceEncoding = await this.extractFaceEncoding(photoUrl)
 
       const { error } = await supabase
         .from(TABLES.FACE_DATA)
         .insert([{
           user_id: userId,
           face_encoding: faceEncoding,
-          photo_url: photoData,
+          photo_url: photoUrl,
           created_at: new Date().toISOString()
         }])
 
@@ -252,10 +345,10 @@ export const AuthService = {
       console.error('Error storing face data:', error)
       return false
     }
-  }
+  },
 
   // Create customer account
-  static async createCustomerAccount(userId) {
+  async createCustomerAccount(userId) {
     try {
       const { error } = await supabase
         .from(TABLES.CUSTOMER_ACCOUNTS)
@@ -276,10 +369,10 @@ export const AuthService = {
       console.error('Error creating customer account:', error)
       return false
     }
-  }
+  },
 
   // Compare face data (mock implementation)
-  static async compareFaceData(inputFaceData, storedFaceRecords) {
+  async compareFaceData(inputFaceData, storedFaceRecords) {
     // In production, use a proper face recognition library
     // like face-api.js or a cloud service
     
@@ -289,17 +382,17 @@ export const AuthService = {
     }
     
     return null
-  }
+  },
 
   // Extract face encoding (mock implementation)
-  static async extractFaceEncoding(photoData) {
+  async extractFaceEncoding(photoUrl) {
     // In production, use face-api.js or similar library
     // to extract face descriptors/encodings
     return `face_encoding_${Date.now()}`
-  }
+  },
 
   // Validate CPF (Brazilian tax ID)
-  static validateCPF(cpf) {
+  validateCPF(cpf) {
     // Remove non-numeric characters
     cpf = cpf.replace(/[^\d]/g, '')
     
@@ -329,59 +422,25 @@ export const AuthService = {
     if (remainder !== parseInt(cpf.charAt(10))) return false
     
     return true
-  }
+  },
 
   // Logout (clear session)
-  static async logout() {
-    // In production, invalidate the session token on the server
-    return { success: true }
-  }
-  static async registerWithPhoto(userData, photoFile) {
+  async logout() {
     try {
-      // Criar usuário primeiro
-      const { data: user, error: userError } = await supabase.auth.signUp({
-        email: `${userData.cpf}@itsells.temp`, // Email temporário
-        password: userData.cpf, // Senha temporária
-        options: {
-          data: {
-            name: userData.name,
-            cpf: userData.cpf,
-            role: 'customer'
-          }
-        }
-      })
-
-      if (userError) throw userError
-
-      // Upload da foto se fornecida
-      let photoData = null
-      if (photoFile && user.user) {
-        photoData = await ImageUploadService.processAndUploadPhoto(
-          photoFile, 
-          user.user.id, 
-          'profile'
-        )
+      // Sign out from Supabase Auth
+      const { error } = await supabase.auth.signOut()
+      
+      if (error) {
+        console.error('Logout error:', error)
       }
 
-      // Salvar dados do usuário na tabela users
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert({
-          id: user.user.id,
-          email: user.user.email,
-          name: userData.name,
-          cpf: userData.cpf,
-          role: 'customer',
-          photo_url: photoData?.url || null,
-          photo_path: photoData?.path || null
-        })
-
-      if (insertError) throw insertError
-
-      return user
+      // In production, invalidate the session token on the server
+      return { success: true }
     } catch (error) {
-      console.error('Registration error:', error)
-      throw error
+      return { 
+        success: false, 
+        error: error.message 
+      }
     }
   }
 }
