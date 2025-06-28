@@ -315,14 +315,14 @@ export default function LoginPage() {
               
               <div>
                 <label className="block text-gold text-sm font-medium mb-2">
-                  Nome Completo
+                  Senha
                 </label>
                 <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
+                  type="password"
+                  name="password"
+                  value={formData.password}
                   onChange={handleInputChange}
-                  placeholder="Digite seu nome completo"
+                  placeholder="Digite sua senha"
                   className="luxury-input w-full"
                   required
                 />

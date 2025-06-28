@@ -33,7 +33,7 @@ export const AuthService = {
 
       const user = users[0]
 
-      // Check if user has password
+      // Check if user has password hash
       if (!user.password_hash) {
         return {
           success: false,
