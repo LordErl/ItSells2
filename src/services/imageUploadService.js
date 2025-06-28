@@ -6,50 +6,6 @@ export class ImageUploadService {
   static ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
 
   /**
-   * Ensure bucket exists and has correct policies
-   */
-  static async ensureBucket() {
-    try {
-      console.log('ImageUploadService: Checking if bucket exists...')
-      
-      // Try to get bucket
-      const { data: buckets, error: listError } = await supabase.storage.listBuckets()
-      
-      if (listError) {
-        console.error('ImageUploadService: Error listing buckets:', listError)
-        throw new Error('Erro ao verificar buckets de armazenamento')
-      }
-
-      const bucketExists = buckets?.some(bucket => bucket.name === this.BUCKET_NAME)
-      
-      if (!bucketExists) {
-        console.log('ImageUploadService: Creating bucket...')
-        
-        // Create bucket
-        const { data: bucket, error: createError } = await supabase.storage.createBucket(this.BUCKET_NAME, {
-          public: true,
-          allowedMimeTypes: this.ALLOWED_TYPES,
-          fileSizeLimit: this.MAX_FILE_SIZE
-        })
-
-        if (createError) {
-          console.error('ImageUploadService: Error creating bucket:', createError)
-          throw new Error('Erro ao criar bucket de armazenamento')
-        }
-
-        console.log('ImageUploadService: Bucket created successfully:', bucket)
-      } else {
-        console.log('ImageUploadService: Bucket already exists')
-      }
-
-      return true
-    } catch (error) {
-      console.error('ImageUploadService: ensureBucket error:', error)
-      throw error
-    }
-  }
-
-  /**
    * Validate file before upload
    */
   static validateFile(file) {
@@ -124,9 +80,6 @@ export class ImageUploadService {
         userId
       })
 
-      // Ensure bucket exists
-      await this.ensureBucket()
-
       // Validate file
       this.validateFile(file)
 
@@ -147,7 +100,7 @@ export class ImageUploadService {
 
       console.log('ImageUploadService: Uploading to path:', filePath)
 
-      // Upload file
+      // Upload file directly (bucket already exists)
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from(this.BUCKET_NAME)
         .upload(filePath, fileToUpload, {
@@ -276,6 +229,32 @@ export class ImageUploadService {
         success: false,
         error: error.message || 'Erro ao listar imagens'
       }
+    }
+  }
+
+  /**
+   * Test bucket access
+   */
+  static async testBucketAccess() {
+    try {
+      console.log('ImageUploadService: Testing bucket access...')
+      
+      // Try to list files in the bucket
+      const { data, error } = await supabase.storage
+        .from(this.BUCKET_NAME)
+        .list('', { limit: 1 })
+
+      if (error) {
+        console.error('ImageUploadService: Bucket access test failed:', error)
+        return { success: false, error: error.message }
+      }
+
+      console.log('ImageUploadService: Bucket access test successful')
+      return { success: true, data }
+
+    } catch (error) {
+      console.error('ImageUploadService: Bucket test error:', error)
+      return { success: false, error: error.message }
     }
   }
 }
