@@ -148,6 +148,11 @@ export const AuthService = {
       if (!userData.cpf || !userData.name) {
         throw new Error('CPF e nome são obrigatórios')
       }
+      
+      // Validate photo is provided
+      if (!photoFile) {
+        throw new Error('A foto é obrigatória para o cadastro')
+      }
 
       // Clean CPF
       const cleanCPF = userData.cpf.replace(/\D/g, '')
@@ -155,7 +160,7 @@ export const AuthService = {
       // Check if CPF already exists
       const { data: existingUsers, error: checkError } = await supabase
         .from(TABLES.USERS)
-        .select('id')
+        .select('*')
         .eq('cpf', cleanCPF)
         .limit(1)
 
@@ -164,42 +169,75 @@ export const AuthService = {
         throw new Error('Erro ao verificar CPF')
       }
 
+      // If user already exists, handle login flow instead
       if (existingUsers && existingUsers.length > 0) {
-        throw new Error('CPF já cadastrado')
+        const existingUser = existingUsers[0];
+        console.log('AuthService: User already exists, handling as login:', existingUser.id);
+        
+        // Generate session token
+        const token = this.generateToken(existingUser.id);
+        
+        // Get customer account
+        const { data: customerAccount } = await supabase
+          .from(TABLES.CUSTOMER_ACCOUNTS)
+          .select('*')
+          .eq('user_id', existingUser.id)
+          .single();
+        
+        return {
+          success: true,
+          data: {
+            user: {
+              id: existingUser.id,
+              name: existingUser.name,
+              email: existingUser.email,
+              cpf: existingUser.cpf,
+              role: existingUser.role,
+              photo_url: existingUser.photo_url,
+              photo_path: existingUser.photo_path
+            },
+            customerAccount,
+            token,
+            isExistingUser: true
+          }
+        };
       }
 
-      // Upload photo if provided
+      // Upload photo (mandatory)
       let photoUrl = null
       let photoPath = null
       let faceData = null
 
-      if (photoFile) {
-        console.log('AuthService: Uploading photo...')
-        
-        const uploadResult = await ImageUploadService.uploadImage(photoFile, null, true)
-        
-        console.log('AuthService: Photo upload result:', uploadResult)
+      console.log('AuthService: Uploading photo...', { photoFile })
+      
+      if (!photoFile) {
+        console.error('AuthService: Photo file is missing')
+        throw new Error('A foto é obrigatória para o cadastro')
+      }
+      
+      const uploadResult = await ImageUploadService.uploadImage(photoFile, null, true)
+      
+      console.log('AuthService: Photo upload result:', uploadResult)
 
-        if (uploadResult.success) {
-          photoUrl = uploadResult.data.url
-          photoPath = uploadResult.data.path
-          
-          // Generate face data for recognition (simplified)
-          faceData = {
-            uploaded_at: new Date().toISOString(),
-            file_name: uploadResult.data.fileName,
-            file_size: uploadResult.data.size
-          }
-          
-          console.log('AuthService: Photo uploaded successfully:', {
-            photoUrl,
-            photoPath,
-            faceData
-          })
-        } else {
-          console.error('AuthService: Photo upload failed:', uploadResult.error)
-          throw new Error(`Erro no upload da foto: ${uploadResult.error}`)
+      if (uploadResult.success) {
+        photoUrl = uploadResult.data.url
+        photoPath = uploadResult.data.path
+        
+        // Generate face data for recognition (simplified)
+        faceData = {
+          uploaded_at: new Date().toISOString(),
+          file_name: uploadResult.data.fileName,
+          file_size: uploadResult.data.size
         }
+        
+        console.log('AuthService: Photo uploaded successfully:', {
+          photoUrl,
+          photoPath,
+          faceData
+        })
+      } else {
+        console.error('AuthService: Photo upload failed:', uploadResult.error)
+        throw new Error(`Erro no upload da foto: ${uploadResult.error}`)
       }
 
       // Prepare user data
