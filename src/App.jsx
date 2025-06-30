@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { StoreProvider } from './contexts/StoreContext'
+import { Toaster } from 'react-hot-toast'
 
 // Components
 import LoginPage from './pages/LoginPage'
@@ -154,6 +155,31 @@ function App() {
       <AuthProvider>
         <StoreProvider>
           <AppContent />
+          <Toaster 
+            position="top-center"
+            toastOptions={{
+              duration: 3000,
+              style: {
+                background: 'rgba(0, 0, 0, 0.8)',
+                color: '#FFD700',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255, 215, 0, 0.3)',
+                borderRadius: '8px',
+              },
+              success: {
+                iconTheme: {
+                  primary: '#FFD700',
+                  secondary: 'black',
+                },
+              },
+              error: {
+                iconTheme: {
+                  primary: '#ff4b4b',
+                  secondary: 'black',
+                },
+              },
+            }}
+          />
         </StoreProvider>
       </AuthProvider>
     </Router>

@@ -2,14 +2,16 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useStore } from '../contexts/StoreContext'
 import anime from 'animejs'
+import { toast } from 'react-hot-toast'
 
 export default function CustomerMenu() {
   const { user, logout } = useAuth()
-  const { products, customerAccount, getCustomerBill } = useStore()
+  const { products, customerAccount, getCustomerBill, createOrder } = useStore()
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [cart, setCart] = useState([])
   const [showCart, setShowCart] = useState(false)
   const [showAccount, setShowAccount] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   
   const menuRef = useRef(null)
 
@@ -83,6 +85,56 @@ export default function CustomerMenu() {
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+
+  const handleFinalizePedido = async () => {
+    if (!user?.id) {
+      toast.error('Você precisa estar logado para finalizar o pedido')
+      return
+    }
+
+    if (cart.length === 0) {
+      toast.error('Seu carrinho está vazio')
+      return
+    }
+
+    setIsProcessing(true)
+
+    try {
+      // Preparar os dados do pedido
+      const orderData = {
+        customer_id: user.id,
+        table_id: null, // Se o cliente estiver em uma mesa específica, isso deve ser definido
+        items: cart.map(item => ({
+          product_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          observations: item.observations || ''
+        })),
+        observations: ''
+      }
+
+      // Criar o pedido
+      const result = await createOrder(orderData)
+
+      if (result.success) {
+        toast.success('Pedido realizado com sucesso!')
+        setCart([]) // Limpar o carrinho
+        setShowCart(false) // Fechar o modal do carrinho
+        
+        // Atualizar a conta do cliente
+        if (user?.id) {
+          getCustomerBill(user.id)
+        }
+      } else {
+        toast.error(`Erro ao finalizar pedido: ${result.error}`)
+      }
+    } catch (error) {
+      console.error('Erro ao processar pedido:', error)
+      toast.error('Ocorreu um erro ao processar seu pedido')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
 
   return (
     <div className="min-h-screen animated-bg">
@@ -267,8 +319,12 @@ export default function CustomerMenu() {
                   </div>
                 </div>
 
-                <button className="w-full btn-luxury">
-                  Finalizar Pedido
+                <button 
+                  className="w-full btn-luxury" 
+                  onClick={handleFinalizePedido}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? 'Processando...' : 'Finalizar Pedido'}
                 </button>
               </>
             ) : (
