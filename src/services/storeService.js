@@ -531,11 +531,21 @@ export class StoreService {
   // Update customer account
   static async updateCustomerAccount(customerId, amountSpent) {
     try {
+      // Primeiro, buscar o valor atual
+      const { data: currentAccount, error: fetchError } = await supabase
+        .from(TABLES.CUSTOMER_ACCOUNTS)
+        .select('total_spent, visit_count')
+        .eq('user_id', customerId)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      // Atualizar com os novos valores calculados
       const { data, error } = await supabase
         .from(TABLES.CUSTOMER_ACCOUNTS)
         .update({
-          total_spent: supabase.raw(`total_spent + ${amountSpent}`),
-          visit_count: supabase.raw('visit_count + 1'),
+          total_spent: (parseFloat(currentAccount.total_spent) || 0) + parseFloat(amountSpent),
+          visit_count: (parseInt(currentAccount.visit_count) || 0) + 1,
           last_visit: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -547,6 +557,7 @@ export class StoreService {
 
       return { success: true, data }
     } catch (error) {
+      console.error('Error updating customer account:', error)
       return {
         success: false,
         error: dbHelpers.handleError(error)
@@ -652,4 +663,3 @@ export class StoreService {
     }
   }
 }
-

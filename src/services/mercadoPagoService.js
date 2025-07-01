@@ -407,6 +407,7 @@ export class MercadoPagoService {
 
         // Update customer account
         if (payment.customer_id) {
+          // Primeiro, atualiza o saldo da conta
           const { data: account } = await supabase
             .from('customer_accounts')
             .select('current_bill')
@@ -419,6 +420,10 @@ export class MercadoPagoService {
               .from('customer_accounts')
               .update({ current_bill: newBill })
               .eq('customer_id', payment.customer_id)
+
+            // Importa o StoreService para atualizar o total_gasto e visit_count
+            const { StoreService } = await import('./storeService')
+            await StoreService.updateCustomerAccount(payment.customer_id, payment.amount)
           }
         }
 
@@ -534,4 +539,3 @@ export class MercadoPagoService {
 }
 
 export default new MercadoPagoService()
-
