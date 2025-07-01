@@ -207,32 +207,33 @@ export class StoreService {
   // Get order by ID
   static async getOrderById(orderId) {
     try {
+      // Alterar a consulta no método getOrderById
       const { data, error } = await supabase
-        .from(TABLES.ORDERS)
-        .select(`
+      .from(TABLES.ORDERS)
+      .select(`
+        *,
+        users (
+          id,
+          name,
+          cpf
+        ),
+        tables!orders_table_id_fkey (  // Especificar a relação correta
+          id,
+          number,
+          capacity
+        ),
+        order_items (
           *,
-          users (
+          products (
             id,
             name,
-            cpf
-          ),
-          tables (
-            id,
-            number,
-            capacity
-          ),
-          order_items (
-            *,
-            products (
-              id,
-              name,
-              description,
-              image
-            )
+            description,
+            image
           )
-        `)
-        .eq('id', orderId)
-        .single()
+        )
+      `)
+      .eq('id', orderId)
+      .single()
 
       if (error) throw error
 
