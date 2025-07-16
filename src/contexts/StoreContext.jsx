@@ -56,6 +56,13 @@ const initialState = {
   orders: [],
   currentOrder: null,
   
+  // Dashboard Stats
+  dashboardStats: {
+    ordersByStatus: [],
+    todaySales: 0,
+    occupiedTables: 0
+  },
+  
   // Tables & Restaurant
   tables: [],
   reservations: [],
@@ -89,6 +96,15 @@ const initialState = {
 // Store Reducer
 function storeReducer(state, action) {
   switch (action.type) {
+    // Add new action type for updating dashboard stats
+    case 'UPDATE_DASHBOARD_STATS':
+      return {
+        ...state,
+        dashboardStats: {
+          ...state.dashboardStats,
+          ...action.payload
+        }
+      }
     // Products
     case STORE_ACTIONS.SET_PRODUCTS:
       return {
@@ -271,11 +287,28 @@ export function StoreProvider({ children }) {
   // Initialize store data
   useEffect(() => {
     loadInitialData()
+    
+    // Set up real-time subscriptions
+    setupRealtimeSubscriptions()
+    
+    // Clean up subscriptions on unmount
+    return () => {
+      // Any cleanup for subscriptions will be handled by the individual subscription cleanup functions
+    }
   }, [])
 
   // Load initial data
   const loadInitialData = async () => {
     try {
+      // Set loading state
+      dispatch({ type: STORE_ACTIONS.SET_LOADING, payload: { 
+        products: true, 
+        orders: true, 
+        tables: true,
+        staff: true,
+        inventory: true
+      }})
+
       // Load products
       const productsResult = await StoreService.getProducts()
       if (productsResult.success) {
@@ -300,9 +333,24 @@ export function StoreProvider({ children }) {
         dispatch({ type: STORE_ACTIONS.SET_INVENTORY, payload: inventoryResult.data })
       }
       
+      // Load active orders
+      await loadActiveOrders()
+      
+      // Load dashboard stats
+      await loadDashboardStats()
+      
     } catch (error) {
       console.error('Error loading initial data:', error)
       dispatch({ type: STORE_ACTIONS.SET_ERROR, payload: error.message })
+    } finally {
+      // Reset loading state
+      dispatch({ type: STORE_ACTIONS.SET_LOADING, payload: { 
+        products: false, 
+        orders: false, 
+        tables: false,
+        staff: false,
+        inventory: false
+      }})
     }
   }
 
@@ -331,24 +379,49 @@ export function StoreProvider({ children }) {
   const createOrder = async (orderData) => {
     dispatch({ type: STORE_ACTIONS.SET_LOADING, payload: { orders: true } })
     
-    const result = await StoreService.createOrder(orderData)
-    
-    if (result.success) {
-      dispatch({ type: STORE_ACTIONS.ADD_ORDER, payload: result.data })
+    try {
+      const result = await StoreService.createOrder(orderData)
       
-      // Update table status if applicable
-      if (orderData.table_id) {
-        dispatch({
-          type: STORE_ACTIONS.UPDATE_TABLE,
-          payload: { id: orderData.table_id, status: 'occupied', current_order_id: result.data.id }
-        })
+      if (result.success) {
+        // Update orders list
+        dispatch({ type: STORE_ACTIONS.ADD_ORDER, payload: result.data })
+        
+        // Update table status if applicable
+        if (orderData.table_id) {
+          dispatch({
+            type: STORE_ACTIONS.UPDATE_TABLE,
+            payload: { id: orderData.table_id, status: 'occupied', current_order_id: result.data.id }
+          })
+        }
+        
+        // Update customer account if applicable
+        if (orderData.customer_id) {
+          const accountResult = await StoreService.getCustomerAccount(orderData.customer_id)
+          if (accountResult.success) {
+            dispatch({ 
+              type: STORE_ACTIONS.SET_CUSTOMER_ACCOUNT, 
+              payload: accountResult.data 
+            })
+          }
+        }
+        
+        // Refresh active orders to ensure staff view is up to date
+        await loadActiveOrders()
+        
+        // Refresh dashboard stats
+        await loadDashboardStats()
+      } else {
+        dispatch({ type: STORE_ACTIONS.SET_ERROR, payload: result.error })
       }
-    } else {
-      dispatch({ type: STORE_ACTIONS.SET_ERROR, payload: result.error })
+      
+      return result
+    } catch (error) {
+      console.error('Error creating order:', error)
+      dispatch({ type: STORE_ACTIONS.SET_ERROR, payload: error.message })
+      return { success: false, error: error.message }
+    } finally {
+      dispatch({ type: STORE_ACTIONS.SET_LOADING, payload: { orders: false } })
     }
-    
-    dispatch({ type: STORE_ACTIONS.SET_LOADING, payload: { orders: false } })
-    return result
   }
 
   const updateOrderStatus = async (orderId, status) => {
@@ -365,24 +438,37 @@ export function StoreProvider({ children }) {
   const processPayment = async (paymentData) => {
     dispatch({ type: STORE_ACTIONS.SET_LOADING, payload: { payments: true } })
     
-    const result = await StoreService.processPayment(paymentData)
-    
-    if (result.success) {
-      dispatch({ type: STORE_ACTIONS.ADD_PAYMENT, payload: result.data })
+    try {
+      const result = await StoreService.processPayment(paymentData)
       
-      // Update customer account if applicable
-      if (paymentData.customer_id) {
-        const accountResult = await StoreService.getCustomerAccount(paymentData.customer_id)
-        if (accountResult.success) {
-          dispatch({ type: STORE_ACTIONS.SET_CUSTOMER_ACCOUNT, payload: accountResult.data })
+      if (result.success) {
+        dispatch({ type: STORE_ACTIONS.ADD_PAYMENT, payload: result.data })
+        
+        // Update customer account if applicable
+        if (paymentData.customer_id) {
+          const accountResult = await StoreService.getCustomerAccount(paymentData.customer_id)
+          if (accountResult.success) {
+            dispatch({ type: STORE_ACTIONS.SET_CUSTOMER_ACCOUNT, payload: accountResult.data })
+          }
         }
+        
+        // Refresh active orders and dashboard stats
+        await Promise.all([
+          loadActiveOrders(),
+          loadDashboardStats()
+        ])
+      } else {
+        dispatch({ type: STORE_ACTIONS.SET_ERROR, payload: result.error })
       }
-    } else {
-      dispatch({ type: STORE_ACTIONS.SET_ERROR, payload: result.error })
+      
+      return result
+    } catch (error) {
+      console.error('Error processing payment:', error)
+      dispatch({ type: STORE_ACTIONS.SET_ERROR, payload: error.message })
+      return { success: false, error: error.message }
+    } finally {
+      dispatch({ type: STORE_ACTIONS.SET_LOADING, payload: { payments: false } })
     }
-    
-    dispatch({ type: STORE_ACTIONS.SET_LOADING, payload: { payments: false } })
-    return result
   }
 
   // Customer Account Management
@@ -396,6 +482,104 @@ export function StoreProvider({ children }) {
     return result
   }
 
+  // Load active orders
+  const loadActiveOrders = async () => {
+    try {
+      dispatch({ type: STORE_ACTIONS.SET_LOADING, payload: { orders: true } })
+      const result = await StoreService.getActiveOrders()
+      
+      if (result.success) {
+        dispatch({ type: STORE_ACTIONS.SET_ORDERS, payload: result.data })
+      } else {
+        dispatch({ type: STORE_ACTIONS.SET_ERROR, payload: result.error })
+      }
+      
+      return result
+    } catch (error) {
+      console.error('Error loading active orders:', error)
+      dispatch({ type: STORE_ACTIONS.SET_ERROR, payload: error.message })
+      return { success: false, error: error.message }
+    } finally {
+      dispatch({ type: STORE_ACTIONS.SET_LOADING, payload: { orders: false } })
+    }
+  }
+  
+  // Load dashboard statistics
+  const loadDashboardStats = async () => {
+    try {
+      const result = await StoreService.getDashboardStats()
+      
+      if (result.success) {
+        // Update state with dashboard stats
+        dispatch({ type: 'UPDATE_DASHBOARD_STATS', payload: result.data })
+      } else {
+        dispatch({ type: STORE_ACTIONS.SET_ERROR, payload: result.error })
+      }
+      
+      return result
+    } catch (error) {
+      console.error('Error loading dashboard stats:', error)
+      return { success: false, error: error.message }
+    }
+  }
+  
+  // Set up real-time subscriptions
+  const setupRealtimeSubscriptions = () => {
+    // Subscribe to order changes
+    const ordersSubscription = supabase
+      .channel('orders_changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders'
+      }, (payload) => {
+        console.log('Order change detected:', payload)
+        
+        if (payload.eventType === 'INSERT') {
+          // Load the full order data when a new order is created
+          StoreService.getOrderById(payload.new.id).then(result => {
+            if (result.success) {
+              dispatch({ type: STORE_ACTIONS.ADD_ORDER, payload: result.data })
+              
+              // Also update dashboard stats when a new order is created
+              loadDashboardStats()
+            }
+          })
+        } else if (payload.eventType === 'UPDATE') {
+          dispatch({ 
+            type: STORE_ACTIONS.UPDATE_ORDER, 
+            payload: payload.new 
+          })
+          
+          // Update dashboard stats when order status changes
+          loadDashboardStats()
+        }
+      })
+      .subscribe()
+    
+    // Subscribe to payment changes
+    const paymentsSubscription = supabase
+      .channel('payments_changes')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'payments'
+      }, (payload) => {
+        console.log('New payment detected:', payload)
+        dispatch({ type: STORE_ACTIONS.ADD_PAYMENT, payload: payload.new })
+        
+        // Update dashboard stats when a new payment is received
+        loadDashboardStats()
+      })
+      .subscribe()
+    
+    // Return cleanup function
+    return () => {
+      supabase.removeChannel(ordersSubscription)
+      supabase.removeChannel(paymentsSubscription)
+    }
+  }
+
   const value = {
     ...state,
     // Actions
@@ -405,6 +589,8 @@ export function StoreProvider({ children }) {
     updateOrderStatus,
     processPayment,
     getCustomerBill,
+    loadActiveOrders,
+    loadDashboardStats,
     dispatch
   }
 

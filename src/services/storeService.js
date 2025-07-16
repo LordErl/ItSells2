@@ -274,6 +274,48 @@ export class StoreService {
     }
   }
 
+  // Get active orders
+  static async getActiveOrders() {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.ORDERS)
+        .select(`
+          *,
+          order_items (
+            *,
+            products (
+              name,
+              image
+            )
+          ),
+          tables!orders_table_id_fkey (
+            id,
+            number
+          ),
+          users!orders_customer_id_fkey (
+            id,
+            name
+          )
+        `)
+        .in('status', [
+          ORDER_STATUS.PENDING,
+          ORDER_STATUS.CONFIRMED,
+          ORDER_STATUS.PREPARING,
+          ORDER_STATUS.READY
+        ])
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      return { success: true, data }
+    } catch (error) {
+      return {
+        success: false,
+        error: dbHelpers.handleError(error)
+      }
+    }
+  }
+
   // Get all orders (for staff/admin)
   static async getAllOrders(filters = {}) {
     try {
@@ -447,16 +489,68 @@ export class StoreService {
 
       if (updateError) throw updateError
 
-      // If payment approved, update order status
+      // If payment approved, update order status and customer account
       if (paymentResult.success) {
+        // Update order status
         await this.updateOrderStatus(order_id, ORDER_STATUS.DELIVERED)
         
-        // Update customer account
+        // Update customer account with the payment amount
         await this.updateCustomerAccount(customer_id, amount)
       }
 
       return { success: true, data: updatedPayment }
     } catch (error) {
+      console.error('Error processing payment:', error)
+      return {
+        success: false,
+        error: dbHelpers.handleError(error)
+      }
+    }
+  }
+
+  // Get dashboard statistics
+  static async getDashboardStats() {
+    try {
+      // Get orders count by status
+      const { data: ordersByStatus } = await supabase
+        .from(TABLES.ORDERS)
+        .select('status, count(*)')
+        .in('status', [
+          ORDER_STATUS.PENDING,
+          ORDER_STATUS.CONFIRMED,
+          ORDER_STATUS.PREPARING,
+          ORDER_STATUS.READY,
+          ORDER_STATUS.DELIVERED,
+          ORDER_STATUS.CANCELLED
+        ])
+        .group('status')
+
+      // Get today's sales
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      
+      const { data: todaySales } = await supabase
+        .from(TABLES.PAYMENTS)
+        .select('sum(amount)')
+        .eq('status', PAYMENT_STATUS.APPROVED)
+        .gte('created_at', today.toISOString())
+
+      // Get occupied tables
+      const { data: occupiedTables } = await supabase
+        .from(TABLES.TABLES)
+        .select('count(*)')
+        .eq('status', TABLE_STATUS.OCCUPIED)
+
+      return {
+        success: true,
+        data: {
+          ordersByStatus: ordersByStatus || [],
+          todaySales: todaySales?.[0]?.sum || 0,
+          occupiedTables: occupiedTables?.[0]?.count || 0
+        }
+      }
+    } catch (error) {
+      console.error('Error getting dashboard stats:', error)
       return {
         success: false,
         error: dbHelpers.handleError(error)

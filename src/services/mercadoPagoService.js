@@ -369,6 +369,8 @@ export class MercadoPagoService {
 
   // Handle payment update
   async handlePaymentUpdate(paymentData) {
+    console.log('Starting handlePaymentUpdate for payment:', paymentData.id, 'with status:', paymentData.status)
+    
     try {
       const { data: payment, error: paymentError } = await supabase
         .from('payments')
@@ -377,60 +379,125 @@ export class MercadoPagoService {
         .single()
 
       if (paymentError) {
-        console.error('Payment not found:', paymentData.id)
+        console.error('Payment not found in database for external_id:', paymentData.id, 'Error:', paymentError)
         return { success: false, error: 'Payment not found' }
       }
+      
+      console.log('Found payment in database:', payment.id, 'with status:', payment.status)
 
       // Update payment status
-      await supabase
+      console.log('Updating payment status to:', paymentData.status)
+      const { error: updatePaymentError } = await supabase
         .from('payments')
         .update({
           status: paymentData.status,
           status_detail: paymentData.status_detail,
           paid_at: paymentData.date_approved,
-          provider_data: paymentData
+          provider_data: paymentData,
+          updated_at: new Date().toISOString()
         })
         .eq('id', payment.id)
+        
+      if (updatePaymentError) {
+        console.error('Error updating payment status:', updatePaymentError)
+        throw updatePaymentError
+      }
+      
+      console.log('Successfully updated payment status')
 
       // Handle approved payments
       if (paymentData.status === 'approved') {
+        console.log('Processing approved payment for order:', payment.order_id)
+        
         // Update order status if applicable
         if (payment.order_id) {
-          await supabase
+          console.log('Updating order status to paid for order:', payment.order_id)
+          
+          const { error: updateOrderError } = await supabase
             .from('orders')
             .update({
               status: 'paid',
-              paid_at: paymentData.date_approved
+              paid_at: paymentData.date_approved,
+              updated_at: new Date().toISOString()
             })
             .eq('id', payment.order_id)
+            
+          if (updateOrderError) {
+            console.error('Error updating order status:', updateOrderError)
+            throw updateOrderError
+          }
+          
+          console.log('Successfully updated order status to paid')
         }
 
         // Update customer account
         if (payment.customer_id) {
-          // Primeiro, atualiza o saldo da conta
-          const { data: account } = await supabase
-            .from('customer_accounts')
-            .select('current_bill')
-            .eq('customer_id', payment.customer_id)
-            .single()
-
-          if (account) {
-            const newBill = Math.max(0, account.current_bill - payment.amount)
-            await supabase
+          console.log('Updating customer account for customer:', payment.customer_id)
+          
+          try {
+            // Primeiro, atualiza o saldo da conta
+            const { data: account, error: accountError } = await supabase
               .from('customer_accounts')
-              .update({ current_bill: newBill })
+              .select('current_bill, total_spent, visit_count')
               .eq('customer_id', payment.customer_id)
+              .single()
+              
+            if (accountError) {
+              console.error('Error fetching customer account:', accountError)
+              throw accountError
+            }
 
-            // Importa o StoreService para atualizar o total_gasto e visit_count
-            const { StoreService } = await import('./storeService')
-            await StoreService.updateCustomerAccount(payment.customer_id, payment.amount)
+            if (account) {
+              console.log('Current customer account before update:', account)
+              
+              // Atualiza o saldo atual (current_bill)
+              const newBill = Math.max(0, (account.current_bill || 0) - payment.amount)
+              console.log('Updating current_bill from', account.current_bill, 'to', newBill)
+              
+              const { error: updateBillError } = await supabase
+                .from('customer_accounts')
+                .update({ 
+                  current_bill: newBill,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('customer_id', payment.customer_id)
+                
+              if (updateBillError) {
+                console.error('Error updating customer bill:', updateBillError)
+                throw updateBillError
+              }
+              
+              console.log('Successfully updated customer bill')
+
+              // Atualiza o total_gasto e visit_count usando o StoreService
+              console.log('Updating customer account with StoreService for customer:', payment.customer_id)
+              const { StoreService } = await import('./storeService')
+              const updateResult = await StoreService.updateCustomerAccount(payment.customer_id, payment.amount)
+              
+              if (updateResult.success) {
+                console.log('Successfully updated customer account with StoreService:', updateResult.data)
+              } else {
+                console.error('Error updating customer account with StoreService:', updateResult.error)
+                throw new Error(updateResult.error || 'Failed to update customer account')
+              }
+            } else {
+              console.error('Customer account not found for customer:', payment.customer_id)
+            }
+          } catch (error) {
+            console.error('Error in customer account update process:', error)
+            throw error // Re-throw para ser capturado pelo bloco catch externo
           }
+        } else {
+          console.log('No customer_id found for payment, skipping customer account update')
         }
 
         // Send notification (if WhatsApp service is available)
         console.log('Payment approved notification should be sent for payment:', payment.id)
+      } else {
+        console.log('Payment status is not approved, no further processing needed. Status:', paymentData.status)
       }
 
+      console.log('Successfully completed handlePaymentUpdate for payment:', payment.id)
       return { success: true, payment }
     } catch (error) {
       console.error('Error handling payment update:', error)
