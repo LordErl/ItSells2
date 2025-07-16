@@ -512,9 +512,9 @@ export class StoreService {
   static async getDashboardStats() {
     try {
       // Get orders count by status
-      const { data: ordersByStatus } = await supabase
+      const { data: ordersData, error: ordersError } = await supabase
         .from(TABLES.ORDERS)
-        .select('status, count(*)')
+        .select('status')
         .in('status', [
           ORDER_STATUS.PENDING,
           ORDER_STATUS.CONFIRMED,
@@ -523,30 +523,50 @@ export class StoreService {
           ORDER_STATUS.DELIVERED,
           ORDER_STATUS.CANCELLED
         ])
-        .group('status')
+        
+      if (ordersError) throw ordersError
+      
+      // Manually count orders by status
+      const ordersByStatus = [
+        ORDER_STATUS.PENDING,
+        ORDER_STATUS.CONFIRMED,
+        ORDER_STATUS.PREPARING,
+        ORDER_STATUS.READY,
+        ORDER_STATUS.DELIVERED,
+        ORDER_STATUS.CANCELLED
+      ].map(status => ({
+        status,
+        count: ordersData.filter(order => order.status === status).length
+      }))
 
       // Get today's sales
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       
-      const { data: todaySales } = await supabase
+      const { data: payments, error: paymentsError } = await supabase
         .from(TABLES.PAYMENTS)
-        .select('sum(amount)')
+        .select('amount')
         .eq('status', PAYMENT_STATUS.APPROVED)
         .gte('created_at', today.toISOString())
+        
+      if (paymentsError) throw paymentsError
+      
+      const todaySales = payments.reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0)
 
       // Get occupied tables
-      const { data: occupiedTables } = await supabase
+      const { data: tables, error: tablesError } = await supabase
         .from(TABLES.TABLES)
-        .select('count(*)')
+        .select('status')
         .eq('status', TABLE_STATUS.OCCUPIED)
+        
+      if (tablesError) throw tablesError
 
       return {
         success: true,
         data: {
           ordersByStatus: ordersByStatus || [],
-          todaySales: todaySales?.[0]?.sum || 0,
-          occupiedTables: occupiedTables?.[0]?.count || 0
+          todaySales: todaySales,
+          occupiedTables: tables?.length || 0
         }
       }
     } catch (error) {
