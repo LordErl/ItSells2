@@ -5,7 +5,7 @@ import { StoreProvider } from './contexts/StoreContext'
 import { Toaster } from 'react-hot-toast'
 
 // Components
-import LoginPage from './pages/LoginPage'
+import LoginPage from './pages/Login'
 import RegisterPage from './pages/RegisterPage'  // ← ADICIONADO
 import AdminDashboard from './pages/AdminDashboard'
 import StaffDashboard from './pages/StaffDashboard'
