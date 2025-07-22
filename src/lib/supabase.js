@@ -11,28 +11,29 @@ console.log('Environment Variables:', {
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-let supabaseClient;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  const errorMsg = 'Missing Supabase configuration. Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables are set.'
-  console.error(errorMsg)
-  // Instead of throwing, we'll create a mock client that will fail with a meaningful error
-  supabaseClient = {
-    auth: {
-      signIn: () => Promise.reject(new Error(errorMsg)),
-      signOut: () => Promise.reject(new Error(errorMsg)),
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
-    },
-    from: () => ({
-      select: () => Promise.reject(new Error(errorMsg)),
-      insert: () => Promise.reject(new Error(errorMsg)),
-      update: () => Promise.reject(new Error(errorMsg)),
-      delete: () => Promise.reject(new Error(errorMsg))
-    })
+// Create and export Supabase client
+const createSupabaseClient = () => {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    const errorMsg = 'Missing Supabase configuration. Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables are set.'
+    console.error(errorMsg)
+    // Instead of throwing, we'll create a mock client that will fail with a meaningful error
+    return {
+      auth: {
+        signIn: () => Promise.reject(new Error(errorMsg)),
+        signOut: () => Promise.reject(new Error(errorMsg)),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+      },
+      from: () => ({
+        select: () => Promise.reject(new Error(errorMsg)),
+        insert: () => Promise.reject(new Error(errorMsg)),
+        update: () => Promise.reject(new Error(errorMsg)),
+        delete: () => Promise.reject(new Error(errorMsg))
+      })
+    }
   }
-} else {
+  
   // Create Supabase client
-  supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+  return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
@@ -41,7 +42,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
   })
 }
 
-export const supabase = supabaseClient;
+// Initialize the client
+export const supabase = createSupabaseClient();
 
 // Log Supabase client status
 console.log('Supabase client initialized:', supabase ? 'Success' : 'Failed')
