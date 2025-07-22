@@ -11,13 +11,15 @@ console.log('Environment Variables:', {
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// Create and export Supabase client
-const createSupabaseClient = () => {
+// Create Supabase client - using a more direct approach to avoid any initialization issues
+let supabase;
+
+try {
   if (!supabaseUrl || !supabaseAnonKey) {
     const errorMsg = 'Missing Supabase configuration. Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables are set.'
     console.error(errorMsg)
-    // Instead of throwing, we'll create a mock client that will fail with a meaningful error
-    return {
+    // Create a mock client that will fail with a meaningful error
+    supabase = {
       auth: {
         signIn: () => Promise.reject(new Error(errorMsg)),
         signOut: () => Promise.reject(new Error(errorMsg)),
@@ -30,23 +32,39 @@ const createSupabaseClient = () => {
         delete: () => Promise.reject(new Error(errorMsg))
       })
     }
+  } else {
+    // Create the actual Supabase client
+    supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false
+      }
+    })
   }
   
-  // Create Supabase client
-  return createClient(supabaseUrl, supabaseAnonKey, {
+  // Log Supabase client status
+  console.log('Supabase client initialized:', supabase ? 'Success' : 'Failed')
+} catch (error) {
+  console.error('Error initializing Supabase client:', error)
+  // Provide a fallback client that won't break the app but will log errors
+  supabase = {
     auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false
-    }
-  })
+      signIn: () => Promise.reject(new Error('Supabase initialization failed')),
+      signOut: () => Promise.reject(new Error('Supabase initialization failed')),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+    },
+    from: () => ({
+      select: () => Promise.reject(new Error('Supabase initialization failed')),
+      insert: () => Promise.reject(new Error('Supabase initialization failed')),
+      update: () => Promise.reject(new Error('Supabase initialization failed')),
+      delete: () => Promise.reject(new Error('Supabase initialization failed'))
+    })
+  }
 }
 
-// Initialize the client
-export const supabase = createSupabaseClient();
-
-// Log Supabase client status
-console.log('Supabase client initialized:', supabase ? 'Success' : 'Failed')
+// Export the client
+export { supabase }
 
 // Database table names
 export const TABLES = {
