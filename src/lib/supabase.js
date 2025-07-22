@@ -1,17 +1,50 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Supabase configuration
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key'
-
-// Create Supabase client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false
-  }
+// Debug log environment variables
+console.log('Environment Variables:', {
+  VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL ? '***' : 'NOT SET',
+  VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY ? '***' : 'NOT SET',
+  NODE_ENV: import.meta.env.MODE
 })
+
+// Supabase configuration
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+let supabaseClient;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  const errorMsg = 'Missing Supabase configuration. Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables are set.'
+  console.error(errorMsg)
+  // Instead of throwing, we'll create a mock client that will fail with a meaningful error
+  supabaseClient = {
+    auth: {
+      signIn: () => Promise.reject(new Error(errorMsg)),
+      signOut: () => Promise.reject(new Error(errorMsg)),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+    },
+    from: () => ({
+      select: () => Promise.reject(new Error(errorMsg)),
+      insert: () => Promise.reject(new Error(errorMsg)),
+      update: () => Promise.reject(new Error(errorMsg)),
+      delete: () => Promise.reject(new Error(errorMsg))
+    })
+  }
+} else {
+  // Create Supabase client
+  supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false
+    }
+  })
+}
+
+export const supabase = supabaseClient;
+
+// Log Supabase client status
+console.log('Supabase client initialized:', supabase ? 'Success' : 'Failed')
 
 // Database table names
 export const TABLES = {
