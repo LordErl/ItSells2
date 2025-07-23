@@ -1,4 +1,5 @@
-import { supabase, TABLES, ORDER_STATUS, PAYMENT_STATUS, TABLE_STATUS, dbHelpers } from '../lib/supabase'
+import { supabase } from '../hooks/useSupabase'
+import { TABLES, ORDER_STATUS, PAYMENT_STATUS, TABLE_STATUS, dbHelpers } from '../lib/supabase'
 
 export class StoreService {
   // ===== PRODUCTS =====

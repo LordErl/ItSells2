@@ -1,4 +1,5 @@
-import { supabase, TABLES, USER_ROLES } from '../lib/supabase'
+import { supabase } from '../hooks/useSupabase'
+import { TABLES, USER_ROLES } from '../lib/supabase'
 import { ImageUploadService } from './imageUploadService'
 
 export const AuthService = {
