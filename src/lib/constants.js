@@ -1,24 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
-
-
-
-// Supabase configuration
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Supabase env vars missing!');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-});
-
-
+// Database table names
+export const TABLES = {
   USERS: 'users',
   PRODUCTS: 'products',
   CATEGORIES: 'categories',
@@ -33,13 +14,15 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   FACE_DATA: 'face_data'
 }
 
-
+// User roles
+export const USER_ROLES = {
   ADMIN: 'admin',
   STAFF: 'staff',
   CUSTOMER: 'customer'
 }
 
-
+// Order status
+export const ORDER_STATUS = {
   PENDING: 'pending',
   CONFIRMED: 'confirmed',
   PREPARING: 'preparing',
@@ -48,7 +31,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   CANCELLED: 'cancelled'
 }
 
-
+// Payment status
+export const PAYMENT_STATUS = {
   PENDING: 'pending',
   PROCESSING: 'processing',
   APPROVED: 'approved',
@@ -56,14 +40,16 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   CANCELLED: 'cancelled'
 }
 
-
+// Payment methods
+export const PAYMENT_METHODS = {
   PIX: 'pix',
   DEBIT: 'debit',
   CREDIT: 'credit',
   CASH: 'cash'
 }
 
-
+// Table status
+export const TABLE_STATUS = {
   AVAILABLE: 'available',
   OCCUPIED: 'occupied',
   RESERVED: 'reserved',
@@ -71,7 +57,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   OUT_OF_ORDER: 'out_of_order'
 }
 
-
+// Inventory status
+export const INVENTORY_STATUS = {
   OK: 'ok',
   LOW_STOCK: 'low_stock',
   OUT_OF_STOCK: 'out_of_stock',
@@ -79,7 +66,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   EXPIRED: 'expired'
 }
 
-
+// Helper functions for database operations
+export const dbHelpers = {
   // Format date for Supabase
   formatDate: (date) => {
     return new Date(date).toISOString()
@@ -113,30 +101,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 }
 
-
+// Real-time subscriptions helper
+export const subscriptions = {
   // Subscribe to table changes for real-time updates
   subscribeToTable: (tableName, callback, filter = null) => {
-    let subscription = supabase
-      .channel(`${tableName}_changes`)
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: tableName,
-          ...(filter && { filter })
-        }, 
-        callback
-      )
-      .subscribe()
-    
-    return subscription
+    // A função original usava supabase, mas agora vamos exigir que o supabase seja passado como argumento
+    throw new Error('subscriptions.subscribeToTable foi movido. Use um helper separado e injete o supabase!')
   },
-  
-  // Unsubscribe from changes
   unsubscribe: (subscription) => {
-    if (subscription) {
-      supabase.removeChannel(subscription)
-    }
+    throw new Error('subscriptions.unsubscribe foi movido. Use um helper separado e injete o supabase!')
   }
 }
-

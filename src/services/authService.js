@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
-import { TABLES, USER_ROLES } from '../lib/supabase'
+import { TABLES, USER_ROLES } from '../lib/constants'
+
 import { ImageUploadService } from './imageUploadService'
 
 export const AuthService = {

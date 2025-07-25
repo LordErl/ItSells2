@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { TABLES } from '../lib/constants'
 
 export class ImageUploadService {
   static BUCKET_NAME = 'user-images'

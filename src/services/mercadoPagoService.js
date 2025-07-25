@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { TABLES } from '../lib/constants'
 
 // Mercado Pago Integration Service
 export class MercadoPagoService {
