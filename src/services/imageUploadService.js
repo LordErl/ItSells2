@@ -1,4 +1,4 @@
-import { supabase } from '../hooks/useSupabase'
+import { supabase } from '../lib/supabase'
 
 export class ImageUploadService {
   static BUCKET_NAME = 'user-images'

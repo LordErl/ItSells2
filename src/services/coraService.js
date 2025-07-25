@@ -1,4 +1,4 @@
-import { supabase } from '../hooks/useSupabase'
+import { supabase } from '../lib/supabase'
 
 // CORA Bank Integration Service
 export class CoraService {

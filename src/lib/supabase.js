@@ -1,70 +1,22 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Debug log environment variables
-console.log('Environment Variables:', {
-  VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL ? '***' : 'NOT SET',
-  VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY ? '***' : 'NOT SET',
-  NODE_ENV: import.meta.env.MODE
-})
+
 
 // Supabase configuration
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Create Supabase client - using a more direct approach to avoid any initialization issues
-let supabase;
-
-try {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    const errorMsg = 'Missing Supabase configuration. Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables are set.'
-    console.error(errorMsg)
-    // Create a mock client that will fail with a meaningful error
-    supabase = {
-      auth: {
-        signIn: () => Promise.reject(new Error(errorMsg)),
-        signOut: () => Promise.reject(new Error(errorMsg)),
-        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
-      },
-      from: () => ({
-        select: () => Promise.reject(new Error(errorMsg)),
-        insert: () => Promise.reject(new Error(errorMsg)),
-        update: () => Promise.reject(new Error(errorMsg)),
-        delete: () => Promise.reject(new Error(errorMsg))
-      })
-    }
-  } else {
-    // Create the actual Supabase client
-    supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: false
-      }
-    })
-  }
-  
-  // Log Supabase client status
-  console.log('Supabase client initialized:', supabase ? 'Success' : 'Failed')
-} catch (error) {
-  console.error('Error initializing Supabase client:', error)
-  // Provide a fallback client that won't break the app but will log errors
-  supabase = {
-    auth: {
-      signIn: () => Promise.reject(new Error('Supabase initialization failed')),
-      signOut: () => Promise.reject(new Error('Supabase initialization failed')),
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
-    },
-    from: () => ({
-      select: () => Promise.reject(new Error('Supabase initialization failed')),
-      insert: () => Promise.reject(new Error('Supabase initialization failed')),
-      update: () => Promise.reject(new Error('Supabase initialization failed')),
-      delete: () => Promise.reject(new Error('Supabase initialization failed'))
-    })
-  }
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Supabase env vars missing!');
 }
 
-// Export the client
-export { supabase }
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+  },
+});
 
 // Database table names
 export const TABLES = {

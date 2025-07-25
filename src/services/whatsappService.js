@@ -1,4 +1,4 @@
-import { supabase } from '../hooks/useSupabase'
+import { supabase } from '../lib/supabase'
 
 // WhatsApp AI Service for automated customer service and reservations
 export class WhatsAppService {

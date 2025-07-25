@@ -1,4 +1,4 @@
-import { supabase } from '../hooks/useSupabase'
+import { supabase } from '../lib/supabase'
 import { TABLES, USER_ROLES } from '../lib/supabase'
 import { ImageUploadService } from './imageUploadService'
 

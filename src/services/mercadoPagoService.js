@@ -1,4 +1,4 @@
-import { supabase } from '../hooks/useSupabase'
+import { supabase } from '../lib/supabase'
 
 // Mercado Pago Integration Service
 export class MercadoPagoService {
