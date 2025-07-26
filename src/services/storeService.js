@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase'
-import { TABLES, ORDER_STATUS, PAYMENT_STATUS, TABLE_STATUS, dbHelpers } from '../lib/constants'
+import { TABLES, ORDER_STATUS, ORDER_ITEM_STATUS, PAYMENT_STATUS, TABLE_STATUS, dbHelpers } from '../lib/constants'
 
 
 export class StoreService {
@@ -180,7 +180,9 @@ export class StoreService {
         product_id: item.product_id,
         quantity: item.quantity,
         price: item.price,
-        observations: item.observations
+        observations: item.observations,
+        status: ORDER_ITEM_STATUS.PENDING,
+        created_at: new Date().toISOString()
       }))
 
       const { error: itemsError } = await supabase
@@ -262,6 +264,26 @@ export class StoreService {
             )
           )
         `)
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      return { success: true, data }
+    } catch (error) {
+      return {
+        success: false,
+        error: dbHelpers.handleError(error)
+      }
+    }
+  }
+
+  // Get payments by customer
+  static async getPaymentsByCustomer(customerId) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.PAYMENTS)
+        .select('*')
         .eq('customer_id', customerId)
         .order('created_at', { ascending: false })
 
@@ -513,33 +535,43 @@ export class StoreService {
   // Get dashboard statistics
   static async getDashboardStats() {
     try {
-      // Get orders count by status
-      const { data: ordersData, error: ordersError } = await supabase
-        .from(TABLES.ORDERS)
-        .select('status')
-        .in('status', [
-          ORDER_STATUS.PENDING,
-          ORDER_STATUS.CONFIRMED,
-          ORDER_STATUS.PREPARING,
-          ORDER_STATUS.READY,
-          ORDER_STATUS.DELIVERED,
-          ORDER_STATUS.CANCELLED
-        ])
+      // Get pending order items count
+      const { data: pendingItems, error: pendingError } = await supabase
+        .from(TABLES.ORDER_ITEMS)
+        .select('id')
+        .eq('status', ORDER_ITEM_STATUS.PENDING)
         
-      if (ordersError) throw ordersError
-      
-      // Manually count orders by status
-      const ordersByStatus = [
-        ORDER_STATUS.PENDING,
-        ORDER_STATUS.CONFIRMED,
-        ORDER_STATUS.PREPARING,
-        ORDER_STATUS.READY,
-        ORDER_STATUS.DELIVERED,
-        ORDER_STATUS.CANCELLED
-      ].map(status => ({
-        status,
-        count: ordersData.filter(order => order.status === status).length
-      }))
+      if (pendingError) throw pendingError
+
+      // Get preparing order items count
+      const { data: preparingItems, error: preparingError } = await supabase
+        .from(TABLES.ORDER_ITEMS)
+        .select('id')
+        .eq('status', ORDER_ITEM_STATUS.PRODUCING)
+        
+      if (preparingError) throw preparingError
+
+      // Get ready order items count
+      const { data: readyItems, error: readyError } = await supabase
+        .from(TABLES.ORDER_ITEMS)
+        .select('id')
+        .eq('status', ORDER_ITEM_STATUS.READY)
+        
+      if (readyError) throw readyError
+
+      // Get occupied tables based on users.on_table
+      const { data: occupiedUsers, error: occupiedError } = await supabase
+        .from(TABLES.USERS)
+        .select(`
+          on_table,
+          to_pay,
+          tables!inner(
+            number
+          )
+        `)
+        .not('on_table', 'is', null)
+        
+      if (occupiedError) throw occupiedError
 
       // Get today's sales
       const today = new Date()
@@ -555,20 +587,15 @@ export class StoreService {
       
       const todaySales = payments.reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0)
 
-      // Get occupied tables
-      const { data: tables, error: tablesError } = await supabase
-        .from(TABLES.TABLES)
-        .select('status')
-        .eq('status', TABLE_STATUS.OCCUPIED)
-        
-      if (tablesError) throw tablesError
-
       return {
         success: true,
         data: {
-          ordersByStatus: ordersByStatus || [],
+          pendingItems: pendingItems?.length || 0,
+          preparingItems: preparingItems?.length || 0,
+          readyItems: readyItems?.length || 0,
+          occupiedTables: occupiedUsers?.length || 0,
           todaySales: todaySales,
-          occupiedTables: tables?.length || 0
+          occupiedTablesDetails: occupiedUsers || []
         }
       }
     } catch (error) {
@@ -771,6 +798,272 @@ export class StoreService {
       if (error) throw error
 
       return { success: true, data }
+    } catch (error) {
+      return {
+        success: false,
+        error: dbHelpers.handleError(error)
+      }
+    }
+  }
+
+  // ===== OPERATIONAL DASHBOARD =====
+  
+  // Get pending order items for production areas
+  static async getPendingOrderItems(area = null) {
+    try {
+      let query = supabase
+        .from(TABLES.ORDER_ITEMS)
+        .select(`
+          *,
+          orders!inner(
+            id,
+            table_id,
+            customer_id,
+            created_at,
+            tables(
+              number
+            ),
+            users(
+              name
+            )
+          ),
+          products!inner(
+            id,
+            name,
+            category_id,
+            categories(
+              name
+            )
+          )
+        `)
+        .eq('status', ORDER_ITEM_STATUS.PENDING)
+        .order('created_at', { ascending: true })
+
+      // Filter by production area if specified
+      if (area) {
+        // Area 1: Cozinha (food categories)
+        // Area 2: Bar (drinks categories) 
+        // Area 3: Mixed
+        const foodCategories = ['pratos', 'lanches', 'sobremesas']
+        const drinkCategories = ['bebidas', 'sucos', 'cafes']
+        
+        if (area === 1) {
+          query = query.in('products.categories.name', foodCategories)
+        } else if (area === 2) {
+          query = query.in('products.categories.name', drinkCategories)
+        }
+      }
+
+      const { data, error } = await query
+      
+      if (error) throw error
+
+      return { success: true, data }
+    } catch (error) {
+      return {
+        success: false,
+        error: dbHelpers.handleError(error)
+      }
+    }
+  }
+
+  // Update order item status
+  static async updateOrderItemStatus(itemId, status) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.ORDER_ITEMS)
+        .update({
+          status: status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', itemId)
+        .select(`
+          *,
+          orders(
+            id,
+            table_id,
+            tables(
+              number
+            )
+          ),
+          products(
+            name
+          )
+        `)
+        .single()
+
+      if (error) throw error
+
+      return { success: true, data }
+    } catch (error) {
+      return {
+        success: false,
+        error: dbHelpers.handleError(error)
+      }
+    }
+  }
+
+  // Get ready items for waiters
+  static async getReadyOrderItems() {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.ORDER_ITEMS)
+        .select(`
+          *,
+          orders!inner(
+            id,
+            table_id,
+            customer_id,
+            tables(
+              number
+            ),
+            users(
+              name
+            )
+          ),
+          products(
+            name
+          )
+        `)
+        .eq('status', ORDER_ITEM_STATUS.READY)
+        .order('updated_at', { ascending: true })
+      
+      if (error) throw error
+
+      return { success: true, data }
+    } catch (error) {
+      return {
+        success: false,
+        error: dbHelpers.handleError(error)
+      }
+    }
+  }
+
+  // Get delivering items for waiters
+  static async getDeliveringOrderItems() {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.ORDER_ITEMS)
+        .select(`
+          *,
+          orders!inner(
+            id,
+            table_id,
+            customer_id,
+            tables(
+              number
+            ),
+            users(
+              name
+            )
+          ),
+          products(
+            name
+          )
+        `)
+        .eq('status', ORDER_ITEM_STATUS.DELIVERING)
+        .order('updated_at', { ascending: true })
+      
+      if (error) throw error
+
+      return { success: true, data }
+    } catch (error) {
+      return {
+        success: false,
+        error: dbHelpers.handleError(error)
+      }
+    }
+  }
+
+  // Update customer account balance (to_pay field)
+  static async updateCustomerBalance(customerId, amount, operation = 'add') {
+    try {
+      // Get current balance
+      const { data: user, error: userError } = await supabase
+        .from(TABLES.USERS)
+        .select('to_pay')
+        .eq('id', customerId)
+        .single()
+
+      if (userError) throw userError
+
+      const currentBalance = parseFloat(user.to_pay) || 0
+      const newBalance = operation === 'add' 
+        ? currentBalance + parseFloat(amount)
+        : currentBalance - parseFloat(amount)
+
+      const { data, error } = await supabase
+        .from(TABLES.USERS)
+        .update({
+          to_pay: Math.max(0, newBalance), // Ensure balance doesn't go negative
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', customerId)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      return { success: true, data }
+    } catch (error) {
+      return {
+        success: false,
+        error: dbHelpers.handleError(error)
+      }
+    }
+  }
+
+  // Get occupied tables with customer details
+  static async getOccupiedTablesDetails() {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.USERS)
+        .select(`
+          id,
+          name,
+          on_table,
+          to_pay,
+          tables!inner(
+            id,
+            number,
+            capacity
+          )
+        `)
+        .not('on_table', 'is', null)
+        .order('on_table')
+      
+      if (error) throw error
+
+      return { success: true, data }
+    } catch (error) {
+      return {
+        success: false,
+        error: dbHelpers.handleError(error)
+      }
+    }
+  }
+
+  // Confirm item delivery (customer confirmation)
+  static async confirmItemDelivery(itemId, customerId) {
+    try {
+      // Update item status to delivered
+      const { data: item, error: itemError } = await supabase
+        .from(TABLES.ORDER_ITEMS)
+        .update({
+          status: ORDER_ITEM_STATUS.DELIVERED,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', itemId)
+        .select('price, quantity')
+        .single()
+
+      if (itemError) throw itemError
+
+      // Add amount to customer's balance
+      const itemTotal = parseFloat(item.price) * parseInt(item.quantity)
+      await this.updateCustomerBalance(customerId, itemTotal, 'add')
+
+      return { success: true, data: item }
     } catch (error) {
       return {
         success: false,

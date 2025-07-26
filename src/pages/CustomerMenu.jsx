@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useStore } from '../contexts/StoreContext'
+import CustomerDeliveryNotification from '../components/CustomerDeliveryNotification'
 import anime from 'animejs'
 import { toast } from 'react-hot-toast'
 
@@ -153,12 +154,18 @@ export default function CustomerMenu() {
           <div className="flex items-center space-x-3">
             {/* Account Button */}
             <button
-              onClick={() => setShowAccount(true)}
-              className="p-2 bg-neon-cyan/20 text-neon-cyan rounded-lg hover:bg-neon-cyan/30 transition-colors"
+              onClick={() => window.location.href = '/customer-account'}
+              className="relative p-2 bg-neon-cyan/20 text-neon-cyan rounded-lg hover:bg-neon-cyan/30 transition-colors"
+              title="Minha Conta"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
               </svg>
+              {(customerAccount?.current_bill || user?.to_pay || 0) > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                  !
+                </span>
+              )}
             </button>
 
             {/* Cart Button */}
@@ -377,6 +384,9 @@ export default function CustomerMenu() {
           </div>
         </div>
       )}
+      
+      {/* Delivery Notifications */}
+      <CustomerDeliveryNotification customerId={user?.id} />
     </div>
   )
 }

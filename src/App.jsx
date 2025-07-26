@@ -9,7 +9,9 @@ import LoginPage from './pages/Login'
 import RegisterPage from './pages/RegisterPage'  // ← ADICIONADO
 import AdminDashboard from './pages/AdminDashboard'
 import StaffDashboard from './pages/StaffDashboard'
+import OperationalDashboard from './pages/OperationalDashboard'
 import CustomerMenu from './pages/CustomerMenu'
+import CustomerAccount from './pages/CustomerAccount'
 import SupplierDashboard from './pages/SupplierDashboard'
 import QRScanner from './components/QRScanner'
 import LoadingScreen from './components/LoadingScreen'
@@ -68,10 +70,28 @@ function AppContent() {
         />
         
         <Route 
+          path="/operational-dashboard" 
+          element={
+            <ProtectedRoute allowedRoles={['staff', 'admin']}>
+              <OperationalDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
           path="/customer/*" 
           element={
             <ProtectedRoute allowedRoles={['customer']}>
               <CustomerMenu />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/customer-account" 
+          element={
+            <ProtectedRoute allowedRoles={['customer']}>
+              <CustomerAccount />
             </ProtectedRoute>
           } 
         />

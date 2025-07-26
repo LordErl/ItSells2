@@ -1,11 +1,19 @@
-import { useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useStore } from '../contexts/StoreContext'
+import { StoreService } from '../services/storeService'
 import anime from 'animejs'
 
 export default function StaffDashboard() {
   const { user, logout } = useAuth()
   const { orders, tables } = useStore()
+  const [dashboardStats, setDashboardStats] = useState({
+    pendingItems: 0,
+    preparingItems: 0,
+    readyItems: 0,
+    occupiedTables: 0,
+    todaySales: 0
+  })
   const dashboardRef = useRef(null)
 
   useEffect(() => {
@@ -21,11 +29,29 @@ export default function StaffDashboard() {
     }
   }, [])
 
+  useEffect(() => {
+    loadDashboardStats()
+    // Refresh stats every 30 seconds
+    const interval = setInterval(loadDashboardStats, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const loadDashboardStats = async () => {
+    try {
+      const result = await StoreService.getDashboardStats()
+      if (result.success) {
+        setDashboardStats(result.data)
+      }
+    } catch (error) {
+      console.error('Error loading dashboard stats:', error)
+    }
+  }
+
   const stats = {
-    pendingOrders: orders?.filter(order => order.status === 'pending')?.length || 0,
-    preparingOrders: orders?.filter(order => order.status === 'preparing')?.length || 0,
-    readyOrders: orders?.filter(order => order.status === 'ready')?.length || 0,
-    occupiedTables: tables?.filter(table => table.status === 'occupied')?.length || 0
+    pendingOrders: dashboardStats.pendingItems || 0,
+    preparingOrders: dashboardStats.preparingItems || 0,
+    readyOrders: dashboardStats.readyItems || 0,
+    occupiedTables: dashboardStats.occupiedTables || 0
   }
 
   return (
@@ -102,20 +128,23 @@ export default function StaffDashboard() {
             </div>
           </div>
 
-          {/* Table View */}
+          {/* Operational Dashboard */}
           <div className="glass-card p-6">
             <div className="text-center">
               <div className="w-16 h-16 mx-auto mb-4 bg-neon-cyan/20 rounded-full flex items-center justify-center">
                 <svg className="w-8 h-8 text-neon-cyan" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-neon-cyan mb-2">Visão do Salão</h3>
+              <h3 className="text-lg font-bold text-neon-cyan mb-2">Dashboard Operacional</h3>
               <p className="text-gold/70 text-sm mb-4">
-                Monitorar mesas e pedidos em tempo real
+                Controle de produção e entregas
               </p>
-              <button className="px-6 py-3 bg-neon-cyan/20 text-neon-cyan rounded-lg hover:bg-neon-cyan/30 transition-colors w-full font-medium">
-                Ver Salão
+              <button 
+                onClick={() => window.location.href = '/operational-dashboard'}
+                className="px-6 py-3 bg-neon-cyan/20 text-neon-cyan rounded-lg hover:bg-neon-cyan/30 transition-colors w-full font-medium"
+              >
+                Abrir Dashboard
               </button>
             </div>
           </div>

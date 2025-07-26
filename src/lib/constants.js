@@ -31,6 +31,15 @@ export const ORDER_STATUS = {
   CANCELLED: 'cancelled'
 }
 
+// Order item status
+export const ORDER_ITEM_STATUS = {
+  PENDING: 'pending',
+  PRODUCING: 'producing',
+  READY: 'ready',
+  DELIVERING: 'delivering',
+  DELIVERED: 'delivered'
+}
+
 // Payment status
 export const PAYMENT_STATUS = {
   PENDING: 'pending',
