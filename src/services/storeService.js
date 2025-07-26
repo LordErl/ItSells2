@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { TABLES, ORDER_STATUS, PAYMENT_STATUS, TABLE_STATUS, dbHelpers } from '../lib/constants'
-import { TABLES, ORDER_STATUS, PAYMENT_STATUS, TABLE_STATUS, dbHelpers } from '../lib/supabase'
+
 
 export class StoreService {
   // ===== PRODUCTS =====
