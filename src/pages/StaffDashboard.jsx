@@ -161,7 +161,10 @@ export default function StaffDashboard() {
               <p className="text-gold/70 text-sm mb-4">
                 Processar pagamentos e vendas
               </p>
-              <button className="px-6 py-3 bg-neon-green/20 text-neon-green rounded-lg hover:bg-neon-green/30 transition-colors w-full font-medium">
+              <button 
+                onClick={() => navigate('/cashier-dashboard')}
+                className="px-6 py-3 bg-neon-green/20 text-neon-green rounded-lg hover:bg-neon-green/30 transition-colors w-full font-medium"
+              >
                 Abrir Caixa
               </button>
             </div>

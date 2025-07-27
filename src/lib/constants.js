@@ -18,7 +18,8 @@ export const TABLES = {
 export const USER_ROLES = {
   ADMIN: 'admin',
   STAFF: 'staff',
-  CUSTOMER: 'customer'
+  CUSTOMER: 'customer',
+  CASHIER: 'cashier'
 }
 
 // Order status
@@ -52,9 +53,19 @@ export const PAYMENT_STATUS = {
 // Payment methods
 export const PAYMENT_METHODS = {
   PIX: 'pix',
+  CREDIT_CARD: 'cartao',
   DEBIT: 'debit',
   CREDIT: 'credit',
   CASH: 'cash'
+}
+
+// Payment API endpoints
+export const PAYMENT_API = {
+  BASE_URL: 'http://191.31.165.81:8008',
+  ENDPOINTS: {
+    PIX: '/cora/cobranca',
+    CREDIT_CARD: '/mercadopago/processar-pagamento-token'
+  }
 }
 
 // Table status

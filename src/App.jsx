@@ -13,6 +13,7 @@ import OperationalDashboard from './pages/OperationalDashboard'
 import CustomerMenu from './pages/CustomerMenu'
 import CustomerAccount from './pages/CustomerAccount'
 import SupplierDashboard from './pages/SupplierDashboard'
+import CashierDashboard from './pages/CashierDashboard'
 import QRScanner from './components/QRScanner'
 import LoadingScreen from './components/LoadingScreen'
 
@@ -101,6 +102,15 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={['supplier']}>
               <SupplierDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/cashier-dashboard" 
+          element={
+            <ProtectedRoute allowedRoles={['staff', 'admin', 'cashier']}>
+              <CashierDashboard />
             </ProtectedRoute>
           } 
         />
