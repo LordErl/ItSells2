@@ -1,6 +1,5 @@
 import { supabase } from '../lib/supabase'
-import { TABLES, ORDER_STATUS, PAYMENT_STATUS } from '../lib/constants'
-import { dbHelpers } from '../lib/dbHelpers'
+import { TABLES, ORDER_STATUS, PAYMENT_STATUS, dbHelpers } from '../lib/constants'
 
 export class CashierService {
   
