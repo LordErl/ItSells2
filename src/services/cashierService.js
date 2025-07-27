@@ -82,10 +82,6 @@ export class CashierService {
         .from(TABLES.ORDERS)
         .select(`
           table_id,
-          tables(
-            id,
-            number
-          ),
           users(
             id,
             name
@@ -102,7 +98,7 @@ export class CashierService {
         if (!tablesMap.has(order.table_id)) {
           tablesMap.set(order.table_id, {
             id: order.table_id,
-            number: order.tables.number,
+            number: order.table_id, // Use table_id as number since we can't join tables
             customers: []
           })
         }
