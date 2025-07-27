@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useStore } from '../contexts/StoreContext'
 import { StoreService } from '../services/storeService'
 import anime from 'animejs'
 
 export default function StaffDashboard() {
+  const navigate = useNavigate()
   const { user, logout } = useAuth()
   const { orders, tables } = useStore()
   const [dashboardStats, setDashboardStats] = useState({

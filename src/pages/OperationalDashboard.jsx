@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { StoreService } from '../services/storeService'
 import { ORDER_ITEM_STATUS } from '../lib/constants'
 import anime from 'animejs'
 
 export default function OperationalDashboard() {
+  const navigate = useNavigate()
   const { user, logout } = useAuth()
   const [stats, setStats] = useState({
     pendingItems: 0,
@@ -328,7 +330,10 @@ export default function OperationalDashboard() {
               <p className="text-gold/70 text-sm mb-4">
                 Processar pagamentos e vendas
               </p>
-              <button className="px-6 py-3 bg-purple-500/20 text-purple-500 rounded-lg hover:bg-purple-500/30 transition-colors w-full font-medium">
+              <button 
+                onClick={() => navigate('/cashier-dashboard')}
+                className="px-6 py-3 bg-purple-500/20 text-purple-500 rounded-lg hover:bg-purple-500/30 transition-colors w-full font-medium"
+              >
                 Abrir Caixa
               </button>
             </div>
