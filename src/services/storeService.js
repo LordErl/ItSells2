@@ -220,11 +220,6 @@ export class StoreService {
             name,
             cpf
           ),
-          tables!orders_table_id_fkey (
-            id,
-            number,
-            capacity
-          ),
           order_items (
             *,
             products (
@@ -312,11 +307,7 @@ export class StoreService {
               image
             )
           ),
-          tables!orders_table_id_fkey (
-            id,
-            number
-          ),
-          users!orders_customer_id_fkey (
+          users (
             id,
             name
           )
@@ -562,13 +553,7 @@ export class StoreService {
       // Get occupied tables based on users.on_table
       const { data: occupiedUsers, error: occupiedError } = await supabase
         .from(TABLES.USERS)
-        .select(`
-          on_table,
-          to_pay,
-          tables!inner(
-            number
-          )
-        `)
+        .select('on_table, to_pay')
         .not('on_table', 'is', null)
         
       if (occupiedError) throw occupiedError
@@ -815,22 +800,17 @@ export class StoreService {
         .from(TABLES.ORDER_ITEMS)
         .select(`
           *,
-          orders!inner(
+          orders(
             id,
             table_id,
             customer_id,
-            created_at,
-            tables(
-              number
-            ),
-            users(
-              name
-            )
+            created_at
           ),
-          products!inner(
+          products(
             id,
             name,
             category_id,
+            prep_time,
             categories(
               name
             )
@@ -867,24 +847,77 @@ export class StoreService {
     }
   }
 
+  // Get producing order items for production areas
+  static async getProducingOrderItems(area = null) {
+    try {
+      let query = supabase
+        .from(TABLES.ORDER_ITEMS)
+        .select(`
+          *,
+          orders(
+            id,
+            table_id,
+            customer_id,
+            created_at
+          ),
+          products(
+            id,
+            name,
+            category_id,
+            prep_time,
+            categories(
+              name
+            )
+          )
+        `)
+        .eq('status', ORDER_ITEM_STATUS.PRODUCING)
+        .order('created_at', { ascending: true })
+
+      // Filter by production area if specified
+      if (area) {
+        const foodCategories = ['pratos', 'lanches', 'sobremesas']
+        const drinkCategories = ['bebidas', 'sucos', 'cafes']
+        
+        if (area === 1) {
+          query = query.in('products.categories.name', foodCategories)
+        } else if (area === 2) {
+          query = query.in('products.categories.name', drinkCategories)
+        }
+      }
+
+      const { data, error } = await query
+      
+      if (error) throw error
+
+      return { success: true, data }
+    } catch (error) {
+      return {
+        success: false,
+        error: dbHelpers.handleError(error)
+      }
+    }
+  }
+
   // Update order item status
   static async updateOrderItemStatus(itemId, status) {
     try {
+      const updateData = { status: status }
+      
+      // Add started_at timestamp when item starts producing
+      if (status === ORDER_ITEM_STATUS.PRODUCING) {
+        updateData.started_at = new Date().toISOString()
+      }
+      
       const { data, error } = await supabase
         .from(TABLES.ORDER_ITEMS)
-        .update({
-          status: status,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', itemId)
         .select(`
           *,
           orders(
             id,
             table_id,
-            tables(
-              number
-            )
+            customer_id
           ),
           products(
             name
@@ -910,23 +943,17 @@ export class StoreService {
         .from(TABLES.ORDER_ITEMS)
         .select(`
           *,
-          orders!inner(
+          orders(
             id,
             table_id,
-            customer_id,
-            tables(
-              number
-            ),
-            users(
-              name
-            )
+            customer_id
           ),
           products(
             name
           )
         `)
         .eq('status', ORDER_ITEM_STATUS.READY)
-        .order('updated_at', { ascending: true })
+        .order('created_at', { ascending: true })
       
       if (error) throw error
 
@@ -946,23 +973,17 @@ export class StoreService {
         .from(TABLES.ORDER_ITEMS)
         .select(`
           *,
-          orders!inner(
+          orders(
             id,
             table_id,
-            customer_id,
-            tables(
-              number
-            ),
-            users(
-              name
-            )
+            customer_id
           ),
           products(
             name
           )
         `)
         .eq('status', ORDER_ITEM_STATUS.DELIVERING)
-        .order('updated_at', { ascending: true })
+        .order('created_at', { ascending: true })
       
       if (error) throw error
 
@@ -1050,8 +1071,7 @@ export class StoreService {
       const { data: item, error: itemError } = await supabase
         .from(TABLES.ORDER_ITEMS)
         .update({
-          status: ORDER_ITEM_STATUS.DELIVERED,
-          updated_at: new Date().toISOString()
+          status: ORDER_ITEM_STATUS.DELIVERED
         })
         .eq('id', itemId)
         .select('price, quantity')
