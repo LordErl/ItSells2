@@ -89,11 +89,13 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
       setPaymentReference(reference)
 
       // Create payment request in database
+      const isCustomerPayment = selectedTable.type === 'customer'
       const paymentRequest = await CashierService.createPaymentRequest(
         selectedTable.id,
         totals.total,
         'pix',
-        totals.includeServiceCharge
+        totals.includeServiceCharge,
+        isCustomerPayment
       )
 
       if (!paymentRequest.success) {

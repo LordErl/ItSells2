@@ -207,16 +207,26 @@ export class CashierService {
   /**
    * Create payment request record
    */
-  static async createPaymentRequest(tableId, totalAmount, paymentMethod, includeServiceCharge = false) {
+  static async createPaymentRequest(tableOrCustomerId, totalAmount, paymentMethod, includeServiceCharge = false, isCustomerPayment = false) {
     try {
       const paymentData = {
-        table_id: tableId,
         amount: totalAmount,
         payment_method: paymentMethod,
         service_charge_included: includeServiceCharge,
         status: PAYMENT_STATUS.PENDING,
         created_at: new Date().toISOString()
       }
+
+      // Set either customer_id or table_id based on payment type
+      if (isCustomerPayment) {
+        paymentData.customer_id = tableOrCustomerId
+        paymentData.table_id = null // Explicitly set to null for customer payments
+      } else {
+        paymentData.table_id = tableOrCustomerId
+        paymentData.customer_id = null // Explicitly set to null for table payments
+      }
+
+      console.log('💳 Creating payment request:', paymentData)
 
       const { data, error } = await supabase
         .from(TABLES.PAYMENTS)

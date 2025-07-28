@@ -51,11 +51,13 @@ const CardPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
       setPaymentReference(reference)
 
       // Create payment request in database
+      const isCustomerPayment = selectedTable.type === 'customer'
       const paymentRequest = await CashierService.createPaymentRequest(
         selectedTable.id,
         totals.total,
-        'credit_card',
-        totals.includeServiceCharge
+        'card',
+        totals.includeServiceCharge,
+        isCustomerPayment
       )
 
       if (!paymentRequest.success) {
@@ -115,7 +117,7 @@ const CardPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
         setTimeout(() => {
           onPaymentSuccess({
             reference: paymentReference,
-            method: 'credit_card',
+            method: 'card',
             amount: totals.total
           })
         }, 2000)
