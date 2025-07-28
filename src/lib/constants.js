@@ -61,7 +61,7 @@ export const PAYMENT_METHODS = {
 
 // Payment API endpoints
 export const PAYMENT_API = {
-  BASE_URL: 'http://191.31.165.81:8008',
+  BASE_URL: 'https://191.31.165.81:8008',
   ENDPOINTS: {
     PIX: '/cora/cobranca',
     CREDIT_CARD: '/mercadopago/processar-pagamento-token'
