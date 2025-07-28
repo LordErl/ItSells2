@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase'
-import { TABLES, ORDER_STATUS, PAYMENT_STATUS, dbHelpers } from '../lib/constants'
+import { TABLES, ORDER_STATUS, PAYMENT_STATUS, dbHelpers, ORDER_ITEM_STATUS } from '../lib/constants'
 
 export class CashierService {
   
@@ -121,29 +121,70 @@ export class CashierService {
       console.log('📋 Query result:', data)
       console.log('📋 Query result length:', data?.length)
 
-      // Group by table and get unique tables
+      // Group by customer (default) or by table (optional)
+      const customersMap = new Map()
       const tablesMap = new Map()
+      
       data.forEach(order => {
-        if (!tablesMap.has(order.table_id)) {
-          tablesMap.set(order.table_id, {
-            id: order.table_id,
-            number: order.table_id, // Use table_id as number since we can't join tables
-            customers: []
-          })
-        }
+        // Check if all order items are delivered
+        const allItemsDelivered = order.order_items.length > 0 && 
+          order.order_items.every(item => item.status === ORDER_ITEM_STATUS.DELIVERED)
         
-        const table = tablesMap.get(order.table_id)
-        if (!table.customers.find(c => c.id === order.users.id)) {
-          table.customers.push({
-            id: order.users.id,
-            name: order.users.name
+        if (allItemsDelivered) {
+          const customerId = order.users?.id
+          const customerName = order.users?.name || 'Cliente'
+          const tableId = order.table_id
+          
+          // Group by customer (individual bills)
+          if (!customersMap.has(customerId)) {
+            customersMap.set(customerId, {
+              id: customerId,
+              name: customerName,
+              table_id: tableId,
+              table_number: tableId,
+              orders: [],
+              totalAmount: 0,
+              type: 'customer'
+            })
+          }
+          
+          const customer = customersMap.get(customerId)
+          customer.orders.push({
+            id: order.id,
+            order_items: order.order_items
           })
+          
+          // Also group by table for optional table billing
+          if (!tablesMap.has(tableId)) {
+            tablesMap.set(tableId, {
+              id: tableId,
+              number: tableId,
+              customers: [],
+              totalAmount: 0,
+              type: 'table'
+            })
+          }
+          
+          const table = tablesMap.get(tableId)
+          if (!table.customers.find(c => c.id === customerId)) {
+            table.customers.push({
+              id: customerId,
+              name: customerName
+            })
+          }
         }
       })
 
-      return { 
-        success: true, 
-        data: Array.from(tablesMap.values()) 
+      const customers = Array.from(customersMap.values())
+      const tables = Array.from(tablesMap.values())
+      
+      console.log('👥 Customers with bills:', customers)
+      console.log('🍽️ Tables with bills:', tables)
+
+      return {
+        customers,
+        tables,
+        defaultView: 'customers' // Default to individual customer bills
       }
     } catch (error) {
       return {

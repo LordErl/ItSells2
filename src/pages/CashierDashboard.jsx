@@ -16,11 +16,14 @@ const CashierDashboard = () => {
   const { user } = useAuth()
   
   // State management
-  const [selectedTable, setSelectedTable] = useState(null)
+  const [selectedBill, setSelectedBill] = useState(null)
+  const [billData, setBillData] = useState({ customers: [], tables: [] })
+  const [viewMode, setViewMode] = useState('customers')
   const [totals, setTotals] = useState(null)
   const [includeServiceCharge, setIncludeServiceCharge] = useState(false)
+  const [couvertRate, setCouvertRate] = useState(0)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null)
-  const [currentStep, setCurrentStep] = useState('table') // 'table', 'bill', 'payment', 'processing'
+  const [currentStep, setCurrentStep] = useState('selection')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -32,7 +35,7 @@ const CashierDashboard = () => {
   }, [user, navigate])
 
   const handleTableSelect = (table) => {
-    setSelectedTable(table)
+    setSelectedBill(table)
     setCurrentStep('bill')
     setError(null)
   }
@@ -58,18 +61,18 @@ const CashierDashboard = () => {
     
     try {
       // Close table after successful payment
-      const result = await CashierService.closeTable(selectedTable.id, paymentData.reference)
+      const result = await CashierService.closeTable(selectedBill.id, paymentData.reference)
       
       if (result.success) {
         // Reset state and go back to table selection
-        setSelectedTable(null)
+        setSelectedBill(null)
         setTotals(null)
         setSelectedPaymentMethod(null)
         setIncludeServiceCharge(false)
-        setCurrentStep('table')
+        setCurrentStep('selection')
         
         // Show success message
-        alert(`Pagamento realizado com sucesso!\nMesa ${selectedTable.number} foi fechada.\nReferência: ${paymentData.reference}`)
+        alert(`Pagamento realizado com sucesso!\nMesa ${selectedBill.number} foi fechada.\nReferência: ${paymentData.reference}`)
       } else {
         setError('Pagamento processado, mas erro ao fechar mesa: ' + result.error)
       }
@@ -87,13 +90,13 @@ const CashierDashboard = () => {
     } else if (currentStep === 'payment') {
       setCurrentStep('bill')
     } else if (currentStep === 'bill') {
-      setCurrentStep('table')
-      setSelectedTable(null)
+      setCurrentStep('selection')
+      setSelectedBill(null)
       setTotals(null)
     }
   }
 
-  const canProceedToPayment = selectedTable && totals && totals.total > 0
+  const canProceedToPayment = selectedBill && totals && totals.total > 0
 
   if (!user) {
     return <div>Carregando...</div>
@@ -122,7 +125,7 @@ const CashierDashboard = () => {
               
               {/* Step Indicator */}
               <div className="flex items-center space-x-2">
-                <div className={`w-3 h-3 rounded-full ${currentStep === 'table' ? 'bg-gold' : 'bg-gold/30'}`}></div>
+                <div className={`w-3 h-3 rounded-full ${currentStep === 'selection' ? 'bg-gold' : 'bg-gold/30'}`}></div>
                 <div className={`w-3 h-3 rounded-full ${currentStep === 'bill' ? 'bg-gold' : 'bg-gold/30'}`}></div>
                 <div className={`w-3 h-3 rounded-full ${currentStep === 'payment' ? 'bg-gold' : 'bg-gold/30'}`}></div>
                 <div className={`w-3 h-3 rounded-full ${currentStep === 'processing' ? 'bg-gold' : 'bg-gold/30'}`}></div>
@@ -152,14 +155,14 @@ const CashierDashboard = () => {
             {/* Table Selection */}
             <TableSelection
               onTableSelect={handleTableSelect}
-              selectedTable={selectedTable}
-              disabled={currentStep !== 'table'}
+              selectedTable={selectedBill}
+              disabled={currentStep !== 'selection'}
             />
 
             {/* Bill Summary */}
-            {currentStep !== 'table' && (
+            {currentStep !== 'selection' && (
               <BillSummary
-                selectedTable={selectedTable}
+                selectedTable={selectedBill}
                 onTotalCalculated={handleTotalCalculated}
                 includeServiceCharge={includeServiceCharge}
                 onServiceChargeChange={handleServiceChargeChange}
@@ -205,7 +208,7 @@ const CashierDashboard = () => {
             {/* Payment Processing */}
             {currentStep === 'processing' && selectedPaymentMethod === PAYMENT_METHODS.PIX && (
               <PixPayment
-                selectedTable={selectedTable}
+                selectedTable={selectedBill}
                 totals={totals}
                 onPaymentSuccess={handlePaymentSuccess}
                 onCancel={handleCancel}
@@ -214,7 +217,7 @@ const CashierDashboard = () => {
 
             {currentStep === 'processing' && selectedPaymentMethod === PAYMENT_METHODS.CREDIT_CARD && (
               <CardPayment
-                selectedTable={selectedTable}
+                selectedTable={selectedBill}
                 totals={totals}
                 onPaymentSuccess={handlePaymentSuccess}
                 onCancel={handleCancel}
@@ -228,7 +231,7 @@ const CashierDashboard = () => {
                 <div className="bg-gold/10 rounded-lg p-4 mb-6">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-gold/70">Mesa:</span>
-                    <span className="text-gold font-medium">{selectedTable.number}</span>
+                    <span className="text-gold font-medium">{selectedBill.number}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gold/70">Total a receber:</span>
@@ -270,7 +273,7 @@ const CashierDashboard = () => {
         </div>
 
         {/* Navigation Buttons */}
-        {currentStep !== 'table' && currentStep !== 'processing' && (
+        {currentStep !== 'selection' && currentStep !== 'processing' && (
           <div className="mt-8 flex justify-center space-x-4">
             <button
               onClick={handleCancel}
