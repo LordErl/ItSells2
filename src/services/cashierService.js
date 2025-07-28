@@ -133,7 +133,8 @@ export class CashierService {
         if (allItemsDelivered) {
           const customerId = order.users?.id
           const customerName = order.users?.name || 'Cliente'
-          const tableId = order.table_id
+          const tableId = order.table_id || 0 // Mesa padrão para clientes sem mesa
+          const tableNumber = tableId === 0 ? 0 : tableId // Mesa 0 para casos sem mesa
           
           // Group by customer (individual bills)
           if (!customersMap.has(customerId)) {
@@ -141,7 +142,7 @@ export class CashierService {
               id: customerId,
               name: customerName,
               table_id: tableId,
-              table_number: tableId,
+              table_number: tableNumber,
               orders: [],
               totalAmount: 0,
               type: 'customer'
@@ -158,7 +159,7 @@ export class CashierService {
           if (!tablesMap.has(tableId)) {
             tablesMap.set(tableId, {
               id: tableId,
-              number: tableId,
+              number: tableNumber,
               customers: [],
               totalAmount: 0,
               type: 'table'

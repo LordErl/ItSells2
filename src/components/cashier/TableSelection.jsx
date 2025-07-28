@@ -127,10 +127,13 @@ const TableSelection = ({ onTableSelect, selectedTable }) => {
                 <div className="mb-1">
                   📊 {customer.orders.length} pedido{customer.orders.length !== 1 ? 's' : ''}
                 </div>
+                <div className="mb-1">
+                  🍽️ {customer.table_number === 0 ? 'Balcão' : `Mesa ${customer.table_number}`}
+                </div>
                 <div className="space-y-1">
                   {customer.orders.map((order, index) => (
                     <div key={order.id} className="truncate">
-                      • {order.name}
+                      • Pedido #{order.id}
                     </div>
                   ))}
                 </div>
@@ -152,9 +155,9 @@ const TableSelection = ({ onTableSelect, selectedTable }) => {
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center">
-                  <span className="text-2xl mr-2">🍽️</span>
+                  <span className="text-2xl mr-2">{table.number === 0 ? '🥤' : '🍽️'}</span>
                   <span className="text-lg font-bold text-gold">
-                    Mesa {table.number}
+                    {table.number === 0 ? 'Balcão' : `Mesa ${table.number}`}
                   </span>
                 </div>
                 {selectedTable?.id === table.id && (

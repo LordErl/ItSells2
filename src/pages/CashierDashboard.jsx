@@ -72,7 +72,11 @@ const CashierDashboard = () => {
         setCurrentStep('selection')
         
         // Show success message
-        alert(`Pagamento realizado com sucesso!\nMesa ${selectedBill.number} foi fechada.\nReferência: ${paymentData.reference}`)
+        const locationText = selectedBill.type === 'customer' 
+          ? `Cliente: ${selectedBill.name} (${selectedBill.table_number === 0 ? 'Balcão' : `Mesa ${selectedBill.table_number}`})`
+          : selectedBill.number === 0 ? 'Balcão' : `Mesa ${selectedBill.number}`
+        
+        alert(`Pagamento realizado com sucesso!\n${locationText} foi fechada.\nReferência: ${paymentData.reference}`)
       } else {
         setError('Pagamento processado, mas erro ao fechar mesa: ' + result.error)
       }
@@ -230,16 +234,26 @@ const CashierDashboard = () => {
                 
                 <div className="bg-gold/10 rounded-lg p-4 mb-6">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-gold/70">Mesa:</span>
-                    <span className="text-gold font-medium">{selectedBill.number}</span>
+                    <span className="text-gold/70">{selectedBill.type === 'customer' ? 'Cliente:' : 'Mesa:'}</span>
+                    <span className="text-gold font-medium">
+                      {selectedBill.type === 'customer' 
+                        ? selectedBill.name 
+                        : selectedBill.number === 0 ? 'Balcão' : `Mesa ${selectedBill.number}`
+                      }
+                    </span>
                   </div>
+                  {selectedBill.type === 'customer' && (
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-gold/70">Local:</span>
+                      <span className="text-gold font-medium">
+                        {selectedBill.table_number === 0 ? 'Balcão' : `Mesa ${selectedBill.table_number}`}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
                     <span className="text-gold/70">Total a receber:</span>
-                    <span className="text-gold font-bold text-2xl">
-                      {new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL'
-                      }).format(totals.total)}
+                    <span className="text-gold font-bold text-lg">
+                      R$ {totals?.total?.toFixed(2) || '0,00'}
                     </span>
                   </div>
                 </div>
