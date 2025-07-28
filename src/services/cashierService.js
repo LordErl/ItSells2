@@ -78,19 +78,48 @@ export class CashierService {
    */
   static async getOccupiedTablesForPayment() {
     try {
+      // First, let's debug what we have in the orders table
+      console.log('🔍 Debugging orders table...')
+      
+      const { data: allOrders, error: debugError } = await supabase
+        .from(TABLES.ORDERS)
+        .select('*')
+        .limit(5)
+      
+      if (debugError) {
+        console.error('Debug error:', debugError)
+      } else {
+        console.log('📊 Sample orders:', allOrders)
+      }
+
+      console.log('🔍 Looking for delivered orders with paid=false...')
+
+      // Instead of looking for orders with status DELIVERED,
+      // let's look for orders that have all items delivered but not paid
       const { data, error } = await supabase
         .from(TABLES.ORDERS)
         .select(`
+          id,
           table_id,
+          status,
+          paid,
           users(
             id,
             name
+          ),
+          order_items(
+            id,
+            status
           )
         `)
-        .in('status', [ORDER_STATUS.CONFIRMED, ORDER_STATUS.PREPARING, ORDER_STATUS.READY])
+        .eq('paid', false)
+        .not('status', 'eq', 'cancelled')
         .order('table_id')
 
       if (error) throw error
+
+      console.log('📋 Query result:', data)
+      console.log('📋 Query result length:', data?.length)
 
       // Group by table and get unique tables
       const tablesMap = new Map()
