@@ -26,7 +26,7 @@ const CashierDashboard = () => {
 
   // Check permissions
   useEffect(() => {
-    if (!user || (user.role !== USER_ROLES.ADMIN && user.role !== USER_ROLES.CASHIER)) {
+    if (!user || (user.role !== USER_ROLES.ADMIN && user.role !== USER_ROLES.STAFF && user.role !== USER_ROLES.CASHIER)) {
       navigate('/staff-dashboard')
     }
   }, [user, navigate])
