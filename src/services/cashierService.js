@@ -347,9 +347,8 @@ export class CashierService {
         billData.orders.forEach(order => {
           if (order.order_items && order.order_items.length > 0) {
             order.order_items.forEach(item => {
-              const quantity = item.quantity || 1
-              const price = item.products?.price || item.price || 0
-              subtotal += quantity * price
+              // Use the price stored in order_items table
+              subtotal += item.quantity * item.price
             })
           }
         })
@@ -358,23 +357,13 @@ export class CashierService {
       // Calculate couvert (if applicable)
       if (billData.type === 'customer') {
         // For individual customer, couvert is per person
-        try {
-          const couvertRate = await this.getDailyCouvertRate()
-          couvert = couvertRate
-        } catch (err) {
-          console.warn('Could not load couvert rate:', err)
-          couvert = 0
-        }
+        const couvertRate = await this.getDailyCouvertRate()
+        couvert = couvertRate
       } else if (billData.type === 'table') {
         // For table billing, couvert is per customer at the table
-        try {
-          const couvertRate = await this.getDailyCouvertRate()
-          const customerCount = billData.customers?.length || 1
-          couvert = couvertRate * customerCount
-        } catch (err) {
-          console.warn('Could not load couvert rate:', err)
-          couvert = 0
-        }
+        const couvertRate = await this.getDailyCouvertRate()
+        const customerCount = billData.customers?.length || 0
+        couvert = couvertRate * customerCount
       }
 
       // Calculate service charge (10% of subtotal)
@@ -416,14 +405,13 @@ export class CashierService {
         .single()
 
       if (error) {
-        // If no config for today, return default rate
-        console.warn('No couvert config for today, using default rate')
-        return 5.00 // Default couvert rate
+        // If no config for today, return 0 (no couvert)
+        return 0
       }
 
       return data.couvert_rate || 0
     } catch (error) {
-      console.warn('Error loading couvert rate:', error)
+      console.error('Error loading couvert rate:', error)
       return 0
     }
   }

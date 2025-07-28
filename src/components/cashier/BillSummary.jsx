@@ -190,7 +190,7 @@ const BillSummary = ({ selectedTable, onTotalCalculated, includeServiceCharge, o
                 <div key={item.id} className="flex justify-between items-center">
                   <div className="flex-1">
                     <div className="text-gold/90">
-                      {item.quantity}x {item.products?.name || item.product_name || 'Produto'}
+                      {item.quantity}x {item.products?.name || 'Produto'}
                     </div>
                     {item.observations && (
                       <div className="text-xs text-gold/60 mt-1">
@@ -199,7 +199,7 @@ const BillSummary = ({ selectedTable, onTotalCalculated, includeServiceCharge, o
                     )}
                   </div>
                   <div className="text-gold font-medium">
-                    R$ {((item.quantity || 1) * (item.products?.price || item.price || 0)).toFixed(2)}
+                    R$ {(item.quantity * item.price).toFixed(2)}
                   </div>
                 </div>
               )) || (
