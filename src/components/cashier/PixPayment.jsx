@@ -15,6 +15,34 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
   const [step, setStep] = useState('form') // 'form', 'processing', 'waiting', 'success'
   const [paymentReference, setPaymentReference] = useState(null)
   const [pollingInterval, setPollingInterval] = useState(null)
+  const [dataLoaded, setDataLoaded] = useState(false)
+
+  // Load existing PIX data when component mounts
+  useEffect(() => {
+    const loadUserPixData = async () => {
+      if (selectedTable.type === 'customer' && selectedTable.id && !dataLoaded) {
+        console.log('🔍 Loading existing PIX data for customer:', selectedTable.id)
+        
+        const result = await CashierService.getUserPixData(selectedTable.id)
+        if (result.success && result.data) {
+          const { name, email, cpf, phone } = result.data
+          
+          // Pre-fill form with existing data
+          setCustomerData({
+            name: name || '',
+            email: email || '',
+            document: cpf || '',
+            phone: phone || ''
+          })
+          
+          console.log('✅ PIX data pre-filled from user profile')
+        }
+        setDataLoaded(true)
+      }
+    }
+
+    loadUserPixData()
+  }, [selectedTable, dataLoaded])
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -81,13 +109,32 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
         customerDocument: customerData.document.replace(/\D/g, ''),
         customerPhone: customerData.phone.replace(/\D/g, ''),
         amount: totals.total,
-        tableNumber: selectedTable.number,
+        tableNumber: selectedTable.number || selectedTable.table_number,
         reference: reference
       }
 
       const result = await PaymentAPI.createPixPayment(paymentData)
 
       if (result.success) {
+        // ✨ STRATEGIC DATA CAPTURE: Save PIX data to user profile
+        if (selectedTable.type === 'customer' && selectedTable.id) {
+          console.log('💾 Saving PIX data strategically to user profile...')
+          
+          const pixDataToSave = {
+            name: customerData.name,
+            email: customerData.email,
+            cpf: customerData.document.replace(/\D/g, ''),
+            phone: customerData.phone.replace(/\D/g, '')
+          }
+          
+          const saveResult = await CashierService.updateUserPixData(selectedTable.id, pixDataToSave)
+          if (saveResult.success) {
+            console.log('✅ PIX data saved to user profile for future use')
+          } else {
+            console.warn('⚠️ Could not save PIX data to profile:', saveResult.error)
+          }
+        }
+
         setPixData(result.data)
         setStep('waiting')
         startPaymentPolling(reference, paymentRequest.data.id)
@@ -259,6 +306,12 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
   return (
     <div className="bg-dark-card rounded-lg p-6">
       <h3 className="text-xl font-bold text-gold mb-6">Dados para PIX</h3>
+
+      {dataLoaded && (customerData.name || customerData.email || customerData.document || customerData.phone) && (
+        <div className="mb-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
+          <div className="text-green-400 text-sm">✅ Dados carregados do seu perfil</div>
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">

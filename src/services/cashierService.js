@@ -421,4 +421,101 @@ export class CashierService {
       return 0
     }
   }
+
+  /**
+   * Update user PIX data strategically on first payment
+   */
+  static async updateUserPixData(userId, pixData) {
+    try {
+      // First check if user already has PIX data
+      const { data: currentUser, error: fetchError } = await supabase
+        .from(TABLES.USERS)
+        .select('pix_name, pix_email, pix_cpf, pix_phone')
+        .eq('id', userId)
+        .single()
+
+      if (fetchError) {
+        console.error('Error fetching user data:', fetchError)
+        return { success: false, error: 'Erro ao buscar dados do usuário' }
+      }
+
+      // Only update if PIX data is not already present
+      const needsUpdate = !currentUser.pix_name || !currentUser.pix_email || 
+                         !currentUser.pix_cpf || !currentUser.pix_phone
+
+      if (needsUpdate) {
+        console.log('🔄 Updating user PIX data for first-time payment...')
+        
+        const updateData = {}
+        
+        // Only update fields that are empty and provided in pixData
+        if (!currentUser.pix_name && pixData.name) {
+          updateData.pix_name = pixData.name
+        }
+        if (!currentUser.pix_email && pixData.email) {
+          updateData.pix_email = pixData.email
+        }
+        if (!currentUser.pix_cpf && pixData.cpf) {
+          updateData.pix_cpf = pixData.cpf
+        }
+        if (!currentUser.pix_phone && pixData.phone) {
+          updateData.pix_phone = pixData.phone
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          updateData.updated_at = new Date().toISOString()
+          
+          const { error: updateError } = await supabase
+            .from(TABLES.USERS)
+            .update(updateData)
+            .eq('id', userId)
+
+          if (updateError) {
+            console.error('Error updating user PIX data:', updateError)
+            return { success: false, error: 'Erro ao atualizar dados PIX do usuário' }
+          }
+
+          console.log('✅ User PIX data updated successfully:', updateData)
+        }
+      } else {
+        console.log('ℹ️ User already has complete PIX data, skipping update')
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error in updateUserPixData:', error)
+      return { success: false, error: 'Erro ao processar dados PIX do usuário' }
+    }
+  }
+
+  /**
+   * Get user PIX data for payment form pre-fill
+   */
+  static async getUserPixData(userId) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.USERS)
+        .select('pix_name, pix_email, pix_cpf, pix_phone')
+        .eq('id', userId)
+        .single()
+
+      if (error) {
+        console.error('Error fetching user PIX data:', error)
+        return { success: false, error: 'Erro ao buscar dados PIX do usuário' }
+      }
+
+      return {
+        success: true,
+        data: {
+          name: data.pix_name || '',
+          email: data.pix_email || '',
+          cpf: data.pix_cpf || '',
+          phone: data.pix_phone || ''
+        }
+      }
+    } catch (error) {
+      console.error('Error in getUserPixData:', error)
+      return { success: false, error: 'Erro ao buscar dados PIX do usuário' }
+    }
+  }
 }
