@@ -396,20 +396,17 @@ export class CashierService {
    */
   static async getDailyCouvertRate() {
     try {
-      const today = new Date().toISOString().split('T')[0]
-      
       const { data, error } = await supabase
         .from('daily_config')
-        .select('couvert_rate')
-        .eq('date', today)
+        .select('couvert')
         .single()
 
       if (error) {
-        // If no config for today, return 0 (no couvert)
+        console.error('Error loading couvert rate:', error)
         return 0
       }
 
-      return data.couvert_rate || 0
+      return data.couvert || 0
     } catch (error) {
       console.error('Error loading couvert rate:', error)
       return 0
