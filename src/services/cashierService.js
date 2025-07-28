@@ -103,13 +103,21 @@ export class CashierService {
           table_id,
           status,
           paid,
+          created_at,
           users(
             id,
             name
           ),
           order_items(
             id,
-            status
+            quantity,
+            price,
+            observations,
+            status,
+            products(
+              id,
+              name
+            )
           )
         `)
         .eq('paid', false)
@@ -152,6 +160,7 @@ export class CashierService {
           const customer = customersMap.get(customerId)
           customer.orders.push({
             id: order.id,
+            created_at: order.created_at,
             order_items: order.order_items
           })
           
