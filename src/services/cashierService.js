@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { TABLES, ORDER_STATUS, PAYMENT_STATUS, ORDER_ITEM_STATUS } from '../lib/constants'
-import dbHelpers from '../lib/dbHelpers'
+import { handleError, formatDate, parseDate, getTables } from '../lib/dbHelpers'
 
 export class CashierService {
   
@@ -36,7 +36,7 @@ export class CashierService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -200,7 +200,7 @@ export class CashierService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -241,7 +241,7 @@ export class CashierService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -273,7 +273,7 @@ export class CashierService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -321,7 +321,7 @@ export class CashierService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -349,7 +349,7 @@ export class CashierService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }

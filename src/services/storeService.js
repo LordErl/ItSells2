@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { TABLES, ORDER_STATUS, ORDER_ITEM_STATUS, PAYMENT_STATUS, TABLE_STATUS } from '../lib/constants'
-import dbHelpers from '../lib/dbHelpers'
+import { handleError, formatDate, parseDate, getTables } from '../lib/dbHelpers'
 
 
 export class StoreService {
@@ -28,7 +28,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -50,7 +50,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -91,7 +91,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -135,7 +135,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -159,7 +159,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -181,7 +181,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -238,7 +238,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -257,7 +257,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -280,7 +280,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -304,7 +304,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -334,7 +334,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -390,7 +390,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -441,7 +441,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -479,7 +479,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -509,7 +509,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -539,7 +539,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -577,7 +577,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -607,7 +607,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
@@ -635,7 +635,7 @@ export class StoreService {
     } catch (error) {
       return {
         success: false,
-        error: dbHelpers.handleError(error)
+        error: handleError(error)
       }
     }
   }
