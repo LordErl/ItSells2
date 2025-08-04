@@ -50,6 +50,8 @@ export const PAYMENT_STATUS = {
   CANCELLED: 'cancelled'
 }
 
+// Constantes de sistema
+
 // Payment methods
 export const PAYMENT_METHODS = {
   PIX: 'pix',
@@ -86,40 +88,7 @@ export const INVENTORY_STATUS = {
   EXPIRED: 'expired'
 }
 
-// Helper functions for database operations
-export const dbHelpers = {
-  // Format date for Supabase
-  formatDate: (date) => {
-    return new Date(date).toISOString()
-  },
-  
-  // Parse date from Supabase
-  parseDate: (dateString) => {
-    return new Date(dateString)
-  },
-  
-  // Generate UUID (for client-side ID generation if needed)
-  generateId: () => {
-    return crypto.randomUUID()
-  },
-  
-  // Handle Supabase errors
-  handleError: (error) => {
-    console.error('Supabase error:', error)
-    
-    if (error.code === 'PGRST301') {
-      return 'Registro não encontrado'
-    } else if (error.code === '23505') {
-      return 'Este registro já existe'
-    } else if (error.code === '23503') {
-      return 'Não é possível excluir este registro pois está sendo usado'
-    } else if (error.message.includes('JWT')) {
-      return 'Sessão expirada. Faça login novamente'
-    } else {
-      return error.message || 'Erro desconhecido'
-    }
-  }
-}
+// Helper functions foram movidas para dbHelpers.js
 
 // Real-time subscriptions helper
 export const subscriptions = {
