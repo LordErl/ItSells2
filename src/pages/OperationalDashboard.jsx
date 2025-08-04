@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { StoreService } from '../services/storeService'
 import { ORDER_ITEM_STATUS } from '../lib/constants'
+import PrepTimeIndicator from '../components/PrepTimeIndicator'
 import anime from 'animejs'
 
 export default function OperationalDashboard() {
@@ -132,44 +133,7 @@ export default function OperationalDashboard() {
     })
   }
 
-  // Component for preparation timer
-  const PrepTimer = ({ startedAt, prepTime }) => {
-    const [elapsed, setElapsed] = useState(0)
-    const [isOverdue, setIsOverdue] = useState(false)
-
-    useEffect(() => {
-      if (!startedAt) return
-
-      const interval = setInterval(() => {
-        const now = new Date()
-        const started = new Date(startedAt)
-        const elapsedMinutes = Math.floor((now - started) / (1000 * 60))
-        
-        setElapsed(elapsedMinutes)
-        setIsOverdue(prepTime && elapsedMinutes > prepTime)
-      }, 1000)
-
-      return () => clearInterval(interval)
-    }, [startedAt, prepTime])
-
-    const formatElapsed = (minutes) => {
-      if (minutes < 60) return `${minutes}min`
-      const hours = Math.floor(minutes / 60)
-      const mins = minutes % 60
-      return `${hours}h ${mins}min`
-    }
-
-    return (
-      <div className={`text-xs px-2 py-1 rounded ${
-        isOverdue ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'
-      }`}>
-        ⏱️ {formatElapsed(elapsed)}
-        {prepTime && (
-          <span className="ml-1 opacity-70">/ {prepTime}min</span>
-        )}
-      </div>
-    )
-  }
+  // Removido o componente PrepTimer e substituído pelo PrepTimeIndicator importado
 
   return (
     <div className="min-h-screen animated-bg">
@@ -440,9 +404,10 @@ export default function OperationalDashboard() {
                               {getStatusText(item.status)}
                             </span>
                             {item.started_at && (
-                              <PrepTimer 
+                              <PrepTimeIndicator 
                                 startedAt={item.started_at} 
                                 prepTime={item.products?.prep_time}
+                                status={item.status}
                               />
                             )}
                           </div>

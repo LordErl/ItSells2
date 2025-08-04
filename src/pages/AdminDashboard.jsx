@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useStore } from '../contexts/StoreContext'
+import { useNavigate } from 'react-router-dom'
 import anime from 'animejs'
 
 export default function AdminDashboard() {
+  const navigate = useNavigate()
   const { user, logout } = useAuth()
   const { products, orders, tables, inventory } = useStore()
   const dashboardRef = useRef(null)
@@ -218,8 +220,11 @@ export default function AdminDashboard() {
         <div className="mt-8 glass-card p-6">
           <h2 className="text-xl font-bold text-gold mb-4">Ações Rápidas</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button className="btn-luxury text-sm py-3">
-              Novo Produto
+            <button 
+              onClick={() => navigate('/admin/products')} 
+              className="btn-luxury text-sm py-3"
+            >
+              Gerenciar Produtos
             </button>
             <button className="px-4 py-3 bg-neon-cyan/20 text-neon-cyan rounded-lg hover:bg-neon-cyan/30 transition-colors text-sm font-medium">
               Backup Dados

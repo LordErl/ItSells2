@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useStore } from '../contexts/StoreContext'
 import CustomerDeliveryNotification from '../components/CustomerDeliveryNotification'
+import { ImageUploadService } from '../services/imageUploadService'
 import anime from 'animejs'
 import { toast } from 'react-hot-toast'
 
@@ -44,12 +45,14 @@ export default function CustomerMenu() {
     { id: 'entradas', name: 'Entradas', icon: '🥗' }
   ]
 
-  const filteredProducts = selectedCategory === 'all' 
-    ? products 
-    : products?.filter(product => 
-        product.categories?.name?.toLowerCase() === selectedCategory ||
-        product.category?.toLowerCase() === selectedCategory
-      )
+  // Primeiro filtra produtos que devem aparecer no menu, depois por categoria
+  const filteredProducts = products
+    ?.filter(product => product.show_in_menu)
+    ?.filter(product => 
+      selectedCategory === 'all' || 
+      product.categories?.name?.toLowerCase() === selectedCategory ||
+      product.category?.toLowerCase() === selectedCategory
+    )
 
   const addToCart = (product) => {
     setCart(prev => {
@@ -223,9 +226,9 @@ export default function CustomerMenu() {
             <div key={product.id} className="glass-card p-4 hover:scale-105 transition-all duration-300">
               {/* Product Image */}
               <div className="w-full h-32 bg-gradient-to-br from-gold/20 to-gold/10 rounded-lg mb-4 flex items-center justify-center">
-                {product.image ? (
+                {product.image_path ? (
                   <img 
-                    src={product.image} 
+                    src={ImageUploadService.getImageUrl(product.image_path)} 
                     alt={product.name}
                     className="w-full h-full object-cover rounded-lg"
                   />
@@ -244,9 +247,9 @@ export default function CustomerMenu() {
                   <span className="text-xl font-bold text-gold">
                     R$ {product.price?.toFixed(2)}
                   </span>
-                  {product.preparation_time && (
-                    <span className="text-xs text-gold/60">
-                      {product.preparation_time} min
+                  {product.prep_time && (
+                    <span className="text-xs bg-neon-cyan/20 text-neon-cyan px-2 py-1 rounded-full">
+                      ⏱️ {product.prep_time} min
                     </span>
                   )}
                 </div>
