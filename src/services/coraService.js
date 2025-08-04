@@ -1,5 +1,4 @@
-import { supabase } from '../lib/supabase'
-import { TABLES } from '../lib/constants'
+import { supabase, TABLES } from '../lib'
 
 // CORA Bank Integration Service
 export class CoraService {

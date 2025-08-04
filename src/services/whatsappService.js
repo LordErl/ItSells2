@@ -1,5 +1,4 @@
-import { supabase } from '../lib/supabase'
-import { TABLES } from '../lib/constants'
+import { supabase, TABLES } from '../lib'
 
 // WhatsApp AI Service for automated customer service and reservations
 export class WhatsAppService {

@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, useEffect } from 'react'
 import { StoreService } from '../services/storeService'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib'
 
 // Store Context
 const StoreContext = createContext()

@@ -1,4 +1,4 @@
-import { PAYMENT_API, PAYMENT_METHODS } from '../lib/constants'
+import { PAYMENT_API, PAYMENT_METHODS } from '../lib'
 
 export class PaymentAPI {
   
