@@ -339,6 +339,25 @@ export class StoreService {
 
   // ===== OPERATIONAL DASHBOARD =====
   
+  // Get tables
+  static async getTables() {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.TABLES)
+        .select('*')
+        .order('number')
+      
+      if (error) throw error
+
+      return { success: true, data }
+    } catch (error) {
+      return {
+        success: false,
+        error: handleError(error)
+      }
+    }
+  }
+
   // Get pending order items for production areas
   static async getPendingOrderItems(area = null) {
     try {
