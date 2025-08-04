@@ -72,13 +72,14 @@ export class ImageUploadService {
   /**
    * Upload image to Supabase Storage
    */
-  static async uploadImage(file, userId = null, compress = true) {
+  static async uploadImage(file, userId = null, compress = true, isProduct = false) {
     try {
       console.log('ImageUploadService: Starting upload...', {
         fileName: file.name,
         fileSize: file.size,
         fileType: file.type,
-        userId
+        userId,
+        isProduct
       })
 
       // Validate file
@@ -97,7 +98,8 @@ export class ImageUploadService {
 
       // Generate unique filename
       const fileName = this.generateFileName(file.name, userId)
-      const filePath = `profiles/${fileName}`
+      // Use different path for products vs user profiles
+      const filePath = isProduct ? `products/${fileName}` : `profiles/${fileName}`
 
       console.log('ImageUploadService: Uploading to path:', filePath)
 

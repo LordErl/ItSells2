@@ -107,7 +107,7 @@ export default function ProductForm({ product = null, onSave, onCancel }) {
 
       // Upload image if selected
       if (imageFile) {
-        const uploadResult = await ImageUploadService.uploadImage(imageFile, null, true)
+        const uploadResult = await ImageUploadService.uploadImage(imageFile, null, true, true) // último true indica que é uma imagem de produto
         if (!uploadResult.success) {
           throw new Error(uploadResult.error || 'Erro ao fazer upload da imagem')
         }

@@ -63,6 +63,8 @@ export class StoreService {
       }
 
       // Create product with new fields
+      const prepTime = productData.prep_time || 15; // Default 15 minutes if not specified
+      
       const { data, error } = await supabase
         .from(TABLES.PRODUCTS)
         .insert([{
@@ -72,7 +74,8 @@ export class StoreService {
           category_id: productData.category_id,
           ingredients: productData.ingredients || '',
           available: productData.available !== undefined ? productData.available : true,
-          prep_time: productData.prep_time || 15, // Default 15 minutes if not specified
+          prep_time: prepTime, // Novo campo
+          preparation_time: String(prepTime), // Campo original (como string)
           show_in_menu: productData.show_in_menu !== undefined ? productData.show_in_menu : true,
           image_path: productData.image_path || null,
           created_at: new Date().toISOString(),
@@ -111,6 +114,11 @@ export class StoreService {
       // If prep_time is being set to null or undefined, set it to default
       if (updates.prep_time === null || updates.prep_time === undefined) {
         updateData.prep_time = 15
+      }
+      
+      // Sincronizar preparation_time com prep_time
+      if (updateData.prep_time !== undefined) {
+        updateData.preparation_time = String(updateData.prep_time)
       }
 
       const { data, error } = await supabase
