@@ -224,6 +224,15 @@ export class StoreService {
       if (table_id) {
         await this.updateTableStatus(table_id, TABLE_STATUS.OCCUPIED, order.id)
       }
+      
+      return { success: true, data: order }
+    } catch (error) {
+      return {
+        success: false,
+        error: dbHelpers.handleError(error)
+      }
+    }
+  }
   
   // Get inventory items
   static async getInventory() {
