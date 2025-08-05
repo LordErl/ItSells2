@@ -9,6 +9,7 @@ export default function FaceRecognition({ onSuccess, onClose }) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState(null)
   const [scanProgress, setScanProgress] = useState(0)
+  const [showSettings, setShowSettings] = useState(false)
   
   const { loginWithFace } = useAuth()
   const videoRef = useRef(null)
@@ -158,12 +159,21 @@ export default function FaceRecognition({ onSuccess, onClose }) {
             <Scan className="w-5 h-5" />
             <span>Reconhecimento Facial</span>
           </h3>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gold/20 rounded-full transition-colors"
-          >
-            <X className="w-5 h-5 text-gold" />
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-2 hover:bg-gold/20 rounded-full transition-colors"
+              title="Configurações"
+            >
+              <Settings className="w-5 h-5 text-gold" />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gold/20 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5 text-gold" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -278,6 +288,11 @@ export default function FaceRecognition({ onSuccess, onClose }) {
         {/* Hidden canvas for image processing */}
         <canvas ref={canvasRef} className="hidden" />
       </div>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <FaceRecognitionSettings onClose={() => setShowSettings(false)} />
+      )}
     </div>
   )
 }
