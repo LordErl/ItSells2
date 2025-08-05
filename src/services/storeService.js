@@ -495,6 +495,55 @@ export class StoreService {
     }
   }
 
+  // Get orders by customer ID
+  static async getOrdersByCustomer(customerId) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.ORDERS)
+        .select(`
+          *,
+          order_items(
+            *,
+            products(
+              name,
+              price
+            )
+          )
+        `)
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+
+      return { success: true, data: data || [] }
+    } catch (error) {
+      return {
+        success: false,
+        error: handleError(error)
+      }
+    }
+  }
+
+  // Get payments by customer ID
+  static async getPaymentsByCustomer(customerId) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.PAYMENTS)
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+
+      return { success: true, data: data || [] }
+    } catch (error) {
+      return {
+        success: false,
+        error: handleError(error)
+      }
+    }
+  }
+
   // Process payment
   static async processPayment(paymentData) {
     try {
