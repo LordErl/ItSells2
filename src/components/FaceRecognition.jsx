@@ -71,12 +71,41 @@ export default function FaceRecognition({ onSuccess, onClose }) {
       const canvas = canvasRef.current
       const context = canvas.getContext('2d')
 
-      // Set canvas dimensions
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
+      // Set canvas dimensions - ensure minimum size for face detection
+      const minSize = 320
+      const videoWidth = video.videoWidth
+      const videoHeight = video.videoHeight
+      
+      // Calculate aspect ratio and ensure minimum dimensions
+      const aspectRatio = videoWidth / videoHeight
+      let canvasWidth, canvasHeight
+      
+      if (videoWidth < minSize || videoHeight < minSize) {
+        if (aspectRatio >= 1) {
+          canvasWidth = minSize
+          canvasHeight = minSize / aspectRatio
+        } else {
+          canvasHeight = minSize
+          canvasWidth = minSize * aspectRatio
+        }
+      } else {
+        canvasWidth = videoWidth
+        canvasHeight = videoHeight
+      }
+      
+      canvas.width = canvasWidth
+      canvas.height = canvasHeight
+      
+      console.log('FaceRecognition: Canvas dimensions:', canvasWidth, 'x', canvasHeight)
+      console.log('FaceRecognition: Video dimensions:', videoWidth, 'x', videoHeight)
 
-      // Draw video frame to canvas
-      context.drawImage(video, 0, 0, canvas.width, canvas.height)
+      // Clear canvas and set high quality rendering
+      context.clearRect(0, 0, canvasWidth, canvasHeight)
+      context.imageSmoothingEnabled = true
+      context.imageSmoothingQuality = 'high'
+      
+      // Draw video frame to canvas with scaling if needed
+      context.drawImage(video, 0, 0, canvasWidth, canvasHeight)
 
       // Convert to blob
       const blob = await new Promise(resolve => {

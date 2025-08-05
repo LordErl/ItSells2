@@ -50,20 +50,76 @@ export class FaceRecognitionService {
         }
       }
 
-      // Detect face and extract descriptor
-      const detection = await faceapi
-        .detectSingleFace(imageElement, new faceapi.TinyFaceDetectorOptions())
-        .withFaceLandmarks()
-        .withFaceDescriptor()
+      console.log('FaceRecognitionService: Attempting face detection on element:', imageElement)
+      console.log('Element dimensions:', imageElement.width, 'x', imageElement.height)
+
+      // Try multiple detection options for better results
+      const detectionOptions = [
+        // Most sensitive - lower input size, lower score threshold
+        new faceapi.TinyFaceDetectorOptions({ 
+          inputSize: 160, 
+          scoreThreshold: 0.3 
+        }),
+        // Medium sensitivity
+        new faceapi.TinyFaceDetectorOptions({ 
+          inputSize: 224, 
+          scoreThreshold: 0.4 
+        }),
+        // Default options
+        new faceapi.TinyFaceDetectorOptions()
+      ]
+
+      let detection = null
+      let usedOptionIndex = -1
+
+      // Try each detection option until we find a face
+      for (let i = 0; i < detectionOptions.length; i++) {
+        try {
+          console.log(`FaceRecognitionService: Trying detection option ${i + 1}/${detectionOptions.length}`)
+          
+          detection = await faceapi
+            .detectSingleFace(imageElement, detectionOptions[i])
+            .withFaceLandmarks()
+            .withFaceDescriptor()
+
+          if (detection) {
+            usedOptionIndex = i
+            console.log(`FaceRecognitionService: Face detected with option ${i + 1}, score:`, detection.detection.score)
+            break
+          }
+        } catch (optionError) {
+          console.warn(`FaceRecognitionService: Detection option ${i + 1} failed:`, optionError.message)
+          continue
+        }
+      }
 
       if (!detection) {
-        throw new Error('Nenhum rosto detectado na imagem')
+        // Try to get all detections to see if there are multiple faces
+        try {
+          const allDetections = await faceapi.detectAllFaces(
+            imageElement, 
+            new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.2 })
+          )
+          
+          console.log('FaceRecognitionService: All detections found:', allDetections.length)
+          
+          if (allDetections.length > 1) {
+            throw new Error(`Múltiplos rostos detectados (${allDetections.length}). Use uma imagem com apenas um rosto.`)
+          } else if (allDetections.length === 0) {
+            throw new Error('Nenhum rosto detectado na imagem. Certifique-se de que seu rosto está bem iluminado e centralizado.')
+          }
+        } catch (multiError) {
+          console.warn('FaceRecognitionService: Multi-face detection also failed:', multiError)
+        }
+        
+        throw new Error('Nenhum rosto detectado na imagem. Tente melhorar a iluminação ou posicionar o rosto no centro da câmera.')
       }
 
       return {
         success: true,
         descriptor: Array.from(detection.descriptor),
-        confidence: detection.detection.score
+        confidence: detection.detection.score,
+        detectionMethod: `Option ${usedOptionIndex + 1}`
       }
     } catch (error) {
       console.error('FaceRecognitionService: Face extraction error:', error)
