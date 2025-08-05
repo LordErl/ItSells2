@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { Camera, Scan, Check, X, RotateCcw } from 'lucide-react'
+import { Camera, Scan, Check, X, RotateCcw, Settings } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import FaceRecognitionSettings from './FaceRecognitionSettings'
 
 export default function FaceRecognition({ onSuccess, onClose }) {
   const [isScanning, setIsScanning] = useState(false)
@@ -81,31 +82,38 @@ export default function FaceRecognition({ onSuccess, onClose }) {
         canvas.toBlob(resolve, 'image/jpeg', 0.9)
       })
 
-      if (!blob) {
-        throw new Error('Falha ao capturar imagem')
-      }
+      const imageFile = new File([blob], 'face-capture.jpg', { type: 'image/jpeg' })
+      setCapturedImage(URL.createObjectURL(blob))
 
-      // Create file from blob
-      const imageFile = new File([blob], 'face_scan.jpg', { type: 'image/jpeg' })
-      
-      // Show captured image
-      const imageUrl = URL.createObjectURL(blob)
-      setCapturedImage(imageUrl)
-      stopCamera()
+      // Progress: Initializing face recognition
+      setScanProgress(20)
+      await new Promise(resolve => setTimeout(resolve, 300))
 
-      // Simulate scanning progress
-      for (let i = 0; i <= 100; i += 10) {
-        setScanProgress(i)
-        await new Promise(resolve => setTimeout(resolve, 100))
-      }
+      // Progress: Processing image
+      setScanProgress(40)
+      await new Promise(resolve => setTimeout(resolve, 300))
 
-      // Attempt face recognition
-      const result = await loginWithFace(imageFile)
+      // Progress: Extracting facial features
+      setScanProgress(60)
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      // Progress: Comparing with database
+      setScanProgress(80)
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      // Attempt face recognition with real comparison
+      const result = await loginWithFace(canvas) // Pass canvas directly
 
       if (result.success) {
         // Success animation
         setScanProgress(100)
         await new Promise(resolve => setTimeout(resolve, 500))
+        
+        console.log('Face recognition successful:', {
+          user: result.data.user.name,
+          similarity: result.data.faceMatch?.similarity,
+          confidence: result.data.faceMatch?.confidence
+        })
         
         onSuccess(result.data)
       } else {

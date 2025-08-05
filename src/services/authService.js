@@ -86,10 +86,37 @@ export const AuthService = {
     try {
       console.log('AuthService: Face login attempt')
 
-      // Simulate face recognition (replace with actual face recognition logic)
+      // Import face recognition service
+      const { default: FaceRecognitionService } = await import('./faceRecognitionService')
+
+      // Initialize face recognition if needed
+      const initialized = await FaceRecognitionService.initialize()
+      if (!initialized) {
+        throw new Error('Erro ao inicializar reconhecimento facial')
+      }
+
+      // Extract face descriptor from input image
+      let inputDescriptor
+      if (faceData instanceof File) {
+        const result = await FaceRecognitionService.processImageFile(faceData)
+        if (!result.success) {
+          throw new Error(result.error || 'Erro ao processar imagem')
+        }
+        inputDescriptor = result.descriptor
+      } else if (faceData instanceof HTMLCanvasElement) {
+        const result = await FaceRecognitionService.processCanvas(faceData)
+        if (!result.success) {
+          throw new Error(result.error || 'Erro ao processar imagem')
+        }
+        inputDescriptor = result.descriptor
+      } else {
+        throw new Error('Formato de imagem não suportado')
+      }
+
+      // Get all users with face data
       const { data: users, error: userError } = await supabase
         .from(TABLES.USERS)
-        .select('*')
+        .select('id, name, email, cpf, role, photo_url, face_data')
         .not('photo_url', 'is', null)
         .not('face_data', 'is', null)
 
@@ -105,24 +132,76 @@ export const AuthService = {
         }
       }
 
-      // For now, return the first user with face data (implement actual face matching)
-      const user = users[0]
+      // Filter users with valid face descriptors
+      const usersWithDescriptors = users.filter(user => 
+        user.face_data && 
+        user.face_data.descriptor && 
+        Array.isArray(user.face_data.descriptor)
+      ).map(user => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        cpf: user.cpf,
+        role: user.role,
+        photo_url: user.photo_url,
+        descriptor: user.face_data.descriptor
+      }))
+
+      if (usersWithDescriptors.length === 0) {
+        return {
+          success: false,
+          error: 'Nenhum usuário com dados faciais válidos encontrado'
+        }
+      }
+
+      // Find best match
+      const matchResult = FaceRecognitionService.findBestMatch(
+        inputDescriptor, 
+        usersWithDescriptors
+      )
+
+      if (!matchResult.success) {
+        throw new Error(matchResult.error || 'Erro na comparação facial')
+      }
+
+      const { bestMatch } = matchResult
+
+      if (!bestMatch || !bestMatch.isMatch) {
+        console.log('AuthService: No face match found', {
+          bestSimilarity: bestMatch?.similarity || 0,
+          threshold: FaceRecognitionService.getSimilarityThreshold()
+        })
+        return {
+          success: false,
+          error: 'Rosto não reconhecido. Tente novamente ou use login manual.'
+        }
+      }
+
+      console.log('AuthService: Face match found', {
+        userId: bestMatch.id,
+        similarity: bestMatch.similarity,
+        threshold: FaceRecognitionService.getSimilarityThreshold()
+      })
 
       // Generate session token
-      const token = this.generateToken(user.id)
+      const token = this.generateToken(bestMatch.id)
 
       return {
         success: true,
         data: {
           user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            cpf: user.cpf,
-            role: user.role,
-            photo_url: user.photo_url
+            id: bestMatch.id,
+            name: bestMatch.name,
+            email: bestMatch.email,
+            cpf: bestMatch.cpf,
+            role: bestMatch.role,
+            photo_url: bestMatch.photo_url
           },
-          token
+          token,
+          faceMatch: {
+            similarity: bestMatch.similarity,
+            confidence: bestMatch.similarity
+          }
         }
       }
 
@@ -224,12 +303,60 @@ export const AuthService = {
         photoUrl = uploadResult.data.url
         photoPath = uploadResult.data.path
         
-        // Generate face data for recognition (simplified)
-        faceData = {
-          uploaded_at: new Date().toISOString(),
-          file_name: uploadResult.data.fileName,
-          file_size: uploadResult.data.size
-        }
+        try {
+          const { default: FaceRecognitionService } = await import('./faceRecognitionService')
+          
+          // Initialize face recognition
+          const initialized = await FaceRecognitionService.initialize()
+          if (!initialized) {
+            console.warn('AuthService: Face recognition not available, storing basic metadata only')
+            faceData = {
+              uploaded_at: new Date().toISOString(),
+              file_name: uploadResult.data.fileName,
+              file_size: uploadResult.data.size,
+              descriptor: null,
+              error: 'Face recognition initialization failed'
+            }
+          } else {
+            // Extract face descriptor from uploaded image
+            const faceResult = await FaceRecognitionService.processImageFile(photoFile)
+            
+            if (faceResult.success) {
+              faceData = {
+                uploaded_at: new Date().toISOString(),
+                file_name: uploadResult.data.fileName,
+                file_size: uploadResult.data.size,
+                descriptor: faceResult.descriptor,
+                confidence: faceResult.confidence,
+                extraction_success: true
+              }
+              console.log('AuthService: Face descriptor extracted successfully', {
+                descriptorLength: faceResult.descriptor?.length,
+                confidence: faceResult.confidence
+              })
+            } else {
+              console.warn('AuthService: Face descriptor extraction failed:', faceResult.error)
+              faceData = {
+                uploaded_at: new Date().toISOString(),
+                file_name: uploadResult.data.fileName,
+                file_size: uploadResult.data.size,
+                descriptor: null,
+                extraction_success: false,
+                extraction_error: faceResult.error
+              }
+            }
+          }
+        } catch (faceError) {
+          console.error('AuthService: Face processing error:', faceError)
+          faceData = {
+            uploaded_at: new Date().toISOString(),
+            file_name: uploadResult.data.fileName,
+            file_size: uploadResult.data.size,
+            descriptor: null,
+            extraction_success: false,
+            extraction_error: faceError.message
+          }
+        }  
         
         console.log('AuthService: Photo uploaded successfully:', {
           photoUrl,
