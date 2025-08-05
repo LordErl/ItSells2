@@ -226,6 +226,28 @@ export default function StaffDashboard() {
               </button>
             </div>
           </div>
+
+          {/* Daily Report */}
+          <div className="glass-card p-6">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-purple-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                  <path fillRule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 102 0V3h4v1a1 1 0 102 0V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm2.5 6a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm2.45.5a2.5 2.5 0 10-3.9 0 .5.5 0 00.95.5h2a.5.5 0 00.95-.5zM12 9a1 1 0 100 2h3a1 1 0 100-2h-3zm-1-4a1 1 0 011-1h3a1 1 0 110 2h-3a1 1 0 01-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-purple-500 mb-2">Relatório Diário</h3>
+              <p className="text-gold/70 text-sm mb-4">
+                Análise completa das operações
+              </p>
+              <button 
+                onClick={() => navigate('/daily-report')}
+                className="px-6 py-3 bg-purple-500/20 text-purple-500 rounded-lg hover:bg-purple-500/30 transition-colors w-full font-medium"
+              >
+                Ver Relatório
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Recent Orders */}

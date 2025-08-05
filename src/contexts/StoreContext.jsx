@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect } from 'react'
+import { createContext, useContext, useReducer, useEffect, useCallback } from 'react'
 import { StoreService } from '../services/storeService'
 import { supabase } from '../lib'
 
@@ -12,6 +12,9 @@ const STORE_ACTIONS = {
   ADD_PRODUCT: 'ADD_PRODUCT',
   UPDATE_PRODUCT: 'UPDATE_PRODUCT',
   DELETE_PRODUCT: 'DELETE_PRODUCT',
+  
+  // Categories
+  SET_CATEGORIES: 'SET_CATEGORIES',
   
   // Orders
   SET_ORDERS: 'SET_ORDERS',
@@ -133,6 +136,13 @@ function storeReducer(state, action) {
       return {
         ...state,
         products: state.products.filter(product => product.id !== action.payload)
+      }
+    
+    // Categories
+    case STORE_ACTIONS.SET_CATEGORIES:
+      return {
+        ...state,
+        categories: action.payload
       }
     
     // Orders
@@ -581,6 +591,47 @@ export function StoreProvider({ children }) {
     }
   }
 
+  // Refresh products
+  const refreshProducts = useCallback(async () => {
+    try {
+      dispatch({ type: STORE_ACTIONS.SET_LOADING, payload: { products: true } })
+      const result = await StoreService.getProducts()
+      
+      if (result.success) {
+        dispatch({ type: STORE_ACTIONS.SET_PRODUCTS, payload: result.data })
+      } else {
+        dispatch({ type: STORE_ACTIONS.SET_ERROR, payload: result.error })
+      }
+      
+      return result
+    } catch (error) {
+      console.error('Error refreshing products:', error)
+      dispatch({ type: STORE_ACTIONS.SET_ERROR, payload: error.message })
+      return { success: false, error: error.message }
+    } finally {
+      dispatch({ type: STORE_ACTIONS.SET_LOADING, payload: { products: false } })
+    }
+  }, [dispatch])
+
+  // Refresh categories
+  const refreshCategories = useCallback(async () => {
+    try {
+      const result = await StoreService.getCategories()
+      
+      if (result.success) {
+        dispatch({ type: STORE_ACTIONS.SET_CATEGORIES, payload: result.data })
+      } else {
+        dispatch({ type: STORE_ACTIONS.SET_ERROR, payload: result.error })
+      }
+      
+      return result
+    } catch (error) {
+      console.error('Error refreshing categories:', error)
+      dispatch({ type: STORE_ACTIONS.SET_ERROR, payload: error.message })
+      return { success: false, error: error.message }
+    }
+  }, [dispatch])
+
   const value = {
     ...state,
     // Actions
@@ -592,6 +643,8 @@ export function StoreProvider({ children }) {
     getCustomerBill,
     loadActiveOrders,
     loadDashboardStats,
+    refreshProducts,
+    refreshCategories,
     dispatch
   }
 
