@@ -686,12 +686,23 @@ export class StoreService {
   // Update order item status
   static async updateOrderItemStatus(itemId, status) {
     try {
+      console.log(`🔄 Updating item ${itemId} status to: ${status}`)
+      
       const updateData = { status: status }
       
       // Add started_at timestamp when item starts producing
       if (status === ORDER_ITEM_STATUS.PRODUCING) {
         updateData.started_at = new Date().toISOString()
       }
+      
+      // Get item info first to get order_id
+      const { data: itemInfo, error: itemInfoError } = await supabase
+        .from(TABLES.ORDER_ITEMS)
+        .select('id, order_id')
+        .eq('id', itemId)
+        .single()
+
+      if (itemInfoError) throw itemInfoError
       
       const { data, error } = await supabase
         .from(TABLES.ORDER_ITEMS)
@@ -712,8 +723,14 @@ export class StoreService {
 
       if (error) throw error
 
+      // Update order totals and status if needed
+      await this.updateOrderTotalsAndStatus(itemInfo.order_id)
+
+      console.log(`✅ Item ${itemId} status updated to ${status}, order ${itemInfo.order_id} checked`)
       return { success: true, data }
+      
     } catch (error) {
+      console.error(`❌ Error updating item ${itemId} status:`, error)
       return {
         success: false,
         error: handleError(error)
@@ -849,9 +866,123 @@ export class StoreService {
     }
   }
 
+  // Update order status
+  static async updateOrderStatus(orderId, status) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.ORDERS)
+        .update({ 
+          status: status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      return { success: true, data }
+    } catch (error) {
+      return {
+        success: false,
+        error: handleError(error)
+      }
+    }
+  }
+
+  // Update order totals and status when all items are delivered
+  static async updateOrderTotalsAndStatus(orderId) {
+    try {
+      console.log(`🔄 Updating order totals and status for order: ${orderId}`)
+      
+      // Get order with all items
+      const { data: order, error: orderError } = await supabase
+        .from(TABLES.ORDERS)
+        .select(`
+          id,
+          table_id,
+          status,
+          total,
+          order_items(
+            id,
+            status,
+            price,
+            quantity
+          )
+        `)
+        .eq('id', orderId)
+        .single()
+
+      if (orderError) throw orderError
+
+      // Check if all items are delivered
+      const allItemsDelivered = order.order_items.length > 0 && 
+        order.order_items.every(item => item.status === ORDER_ITEM_STATUS.DELIVERED)
+
+      console.log(`📦 Order ${orderId}: ${order.order_items.length} items, all delivered: ${allItemsDelivered}`)
+
+      // Calculate total amount from delivered items
+      const totalAmount = order.order_items.reduce((sum, item) => {
+        if (item.status === ORDER_ITEM_STATUS.DELIVERED) {
+          return sum + (parseFloat(item.price) * parseInt(item.quantity))
+        }
+        return sum
+      }, 0)
+
+      // Prepare update data
+      const updateData = {
+        total_amount: totalAmount,
+        updated_at: new Date().toISOString()
+      }
+
+      // If all items are delivered, update status to delivered
+      if (allItemsDelivered) {
+        updateData.status = ORDER_STATUS.DELIVERED
+        console.log(`✅ Order ${orderId} marked as DELIVERED with total: R$ ${totalAmount.toFixed(2)}`)
+      }
+
+      // Update table_number if table_id exists and table_number is null
+      if (order.table_id && !order.table_number) {
+        updateData.table_number = order.table_id
+        console.log(`🍽️ Order ${orderId} table_number set to: ${order.table_id}`)
+      }
+
+      // Update the order
+      const { data: updatedOrder, error: updateError } = await supabase
+        .from(TABLES.ORDERS)
+        .update(updateData)
+        .eq('id', orderId)
+        .select()
+        .single()
+
+      if (updateError) throw updateError
+
+      console.log(`💾 Order ${orderId} updated successfully:`, updateData)
+      return { success: true, data: updatedOrder }
+      
+    } catch (error) {
+      console.error(`❌ Error updating order ${orderId}:`, error)
+      return {
+        success: false,
+        error: handleError(error)
+      }
+    }
+  }
+
   // Confirm item delivery (customer confirmation)
   static async confirmItemDelivery(itemId, customerId) {
     try {
+      console.log(`🚚 Confirming delivery for item: ${itemId}, customer: ${customerId}`)
+      
+      // First, get the item with order info
+      const { data: itemInfo, error: itemInfoError } = await supabase
+        .from(TABLES.ORDER_ITEMS)
+        .select('id, order_id, price, quantity')
+        .eq('id', itemId)
+        .single()
+
+      if (itemInfoError) throw itemInfoError
+
       // Update item status to delivered and set delivered_at timestamp
       const { data: item, error: itemError } = await supabase
         .from(TABLES.ORDER_ITEMS)
@@ -869,8 +1000,14 @@ export class StoreService {
       const itemTotal = parseFloat(item.price) * parseInt(item.quantity)
       await this.updateCustomerBalance(customerId, itemTotal, 'add')
 
+      // Update order totals and status
+      await this.updateOrderTotalsAndStatus(itemInfo.order_id)
+
+      console.log(`✅ Item ${itemId} delivery confirmed, order ${itemInfo.order_id} updated`)
       return { success: true, data: item }
+      
     } catch (error) {
+      console.error(`❌ Error confirming delivery for item ${itemId}:`, error)
       return {
         success: false,
         error: handleError(error)
