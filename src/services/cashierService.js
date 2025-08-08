@@ -77,25 +77,24 @@ export class CashierService {
    */
   static async getOccupiedTablesForPayment() {
     try {
-      // First, let's debug what we have in the orders table
-      console.log('🔍 Debugging orders table...')
+      console.log('🔍 CashierService: Loading occupied tables for payment...')
       
-      const { data: allOrders, error: debugError } = await supabase
+      // First check if we can connect to the database
+      const { data: testConnection, error: connectionError } = await supabase
         .from(TABLES.ORDERS)
-        .select('*')
-        .limit(5)
+        .select('id')
+        .limit(1)
       
-      if (debugError) {
-        console.error('Debug error:', debugError)
-      } else {
-        console.log('📊 Sample orders:', allOrders)
+      if (connectionError) {
+        console.error('❌ Database connection error:', connectionError)
+        throw new Error(`Erro de conexão com o banco de dados: ${connectionError.message}`)
       }
+      
+      console.log('✅ Database connection successful')
 
-      console.log('🔍 Looking for delivered orders with paid=false...')
-
-      // Instead of looking for orders with status DELIVERED,
-      // let's look for orders that have all items delivered but not paid
-      const { data, error } = await supabase
+      // Get orders that are not paid and not cancelled
+      console.log('🔍 Looking for unpaid orders...')
+      const { data: orders, error } = await supabase
         .from(TABLES.ORDERS)
         .select(`
           id,
@@ -103,11 +102,11 @@ export class CashierService {
           status,
           paid,
           created_at,
-          users(
+          users!inner(
             id,
             name
           ),
-          order_items(
+          order_items!inner(
             id,
             quantity,
             price,
@@ -120,86 +119,101 @@ export class CashierService {
           )
         `)
         .eq('paid', false)
-        .not('status', 'eq', 'cancelled')
-        .order('table_id')
+        .neq('status', 'cancelled')
+        .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ Query error:', error)
+        throw new Error(`Erro na consulta: ${error.message}`)
+      }
 
-      console.log('📋 Query result:', data)
-      console.log('📋 Query result length:', data?.length)
+      console.log(`📋 Found ${orders?.length || 0} unpaid orders`)
+      
+      if (!orders || orders.length === 0) {
+        console.log('ℹ️ No unpaid orders found')
+        return {
+          customers: [],
+          tables: [],
+          defaultView: 'customers'
+        }
+      }
 
-      // Group by customer (default) or by table (optional)
+      // Group orders by customer and table
       const customersMap = new Map()
       const tablesMap = new Map()
       
-      data.forEach(order => {
-        // Check if all order items are delivered
-        const allItemsDelivered = order.order_items.length > 0 && 
-          order.order_items.every(item => item.status === ORDER_ITEM_STATUS.DELIVERED)
-        
-        if (allItemsDelivered) {
-          const customerId = order.users?.id
-          const customerName = order.users?.name || 'Cliente'
-          const tableId = order.table_id || 0 // Mesa padrão para clientes sem mesa
-          const tableNumber = tableId === 0 ? 0 : tableId // Mesa 0 para casos sem mesa
+      orders.forEach(order => {
+        try {
+          // Check if all order items are delivered
+          const hasItems = order.order_items && order.order_items.length > 0
+          const allItemsDelivered = hasItems && 
+            order.order_items.every(item => item.status === ORDER_ITEM_STATUS.DELIVERED)
           
-          // Group by customer (individual bills)
-          if (!customersMap.has(customerId)) {
-            customersMap.set(customerId, {
-              id: customerId,
-              name: customerName,
-              table_id: tableId,
-              table_number: tableNumber,
-              orders: [],
-              totalAmount: 0,
-              type: 'customer'
+          console.log(`📦 Order ${order.id}: ${order.order_items?.length || 0} items, all delivered: ${allItemsDelivered}`)
+          
+          if (hasItems && allItemsDelivered) {
+            const customerId = order.users?.id
+            const customerName = order.users?.name || 'Cliente Sem Nome'
+            const tableId = order.table_id || 0 // Default table for customers without table
+            const tableNumber = tableId
+            
+            // Group by customer (individual bills)
+            if (!customersMap.has(customerId)) {
+              customersMap.set(customerId, {
+                id: customerId,
+                name: customerName,
+                table_id: tableId,
+                table_number: tableNumber,
+                orders: [],
+                type: 'customer'
+              })
+            }
+            
+            const customer = customersMap.get(customerId)
+            customer.orders.push({
+              id: order.id,
+              created_at: order.created_at,
+              order_items: order.order_items
             })
+            
+            // Also group by table
+            if (!tablesMap.has(tableId)) {
+              tablesMap.set(tableId, {
+                id: `table_${tableId}`,
+                number: tableNumber,
+                customers: [],
+                type: 'table'
+              })
+            }
+            
+            const table = tablesMap.get(tableId)
+            if (!table.customers.find(c => c.id === customerId)) {
+              table.customers.push({
+                id: customerId,
+                name: customerName
+              })
+            }
           }
-          
-          const customer = customersMap.get(customerId)
-          customer.orders.push({
-            id: order.id,
-            created_at: order.created_at,
-            order_items: order.order_items
-          })
-          
-          // Also group by table for optional table billing
-          if (!tablesMap.has(tableId)) {
-            tablesMap.set(tableId, {
-              id: tableId,
-              number: tableNumber,
-              customers: [],
-              totalAmount: 0,
-              type: 'table'
-            })
-          }
-          
-          const table = tablesMap.get(tableId)
-          if (!table.customers.find(c => c.id === customerId)) {
-            table.customers.push({
-              id: customerId,
-              name: customerName
-            })
-          }
+        } catch (orderError) {
+          console.warn(`⚠️ Error processing order ${order.id}:`, orderError)
         }
       })
 
       const customers = Array.from(customersMap.values())
       const tables = Array.from(tablesMap.values())
       
-      console.log('👥 Customers with bills:', customers)
-      console.log('🍽️ Tables with bills:', tables)
+      console.log(`👥 Found ${customers.length} customers with pending bills`)
+      console.log(`🍽️ Found ${tables.length} tables with pending bills`)
 
       return {
         customers,
         tables,
-        defaultView: 'customers' // Default to individual customer bills
+        defaultView: 'customers'
       }
+      
     } catch (error) {
-      return {
-        success: false,
-        error: handleError(error)
-      }
+      console.error('❌ CashierService.getOccupiedTablesForPayment error:', error)
+      throw error // Re-throw to be handled by the component
     }
   }
 
