@@ -93,37 +93,43 @@ export class CashierService {
       console.log('✅ Database connection successful')
 
       // Get orders that are delivered but not paid yet
-      console.log('🔍 Looking for delivered orders that need payment...')
-      const { data: orders, error } = await supabase
-        .from(TABLES.ORDERS)
-        .select(`
+    console.log('🔍 Looking for delivered orders that need payment...')
+    console.log('🔍 ORDER_STATUS.DELIVERED =', ORDER_STATUS.DELIVERED)
+    
+    // First, let's try a simpler query to debug
+    const { data: orders, error } = await supabase
+      .from(TABLES.ORDERS)
+      .select(`
+        id,
+        table_id,
+        table_number,
+        status,
+        paid,
+        total_amount,
+        created_at,
+        customer_id,
+        users(
           id,
-          table_id,
-          table_number,
+          name
+        ),
+        order_items(
+          id,
+          quantity,
+          price,
+          observations,
           status,
-          paid,
-          total_amount,
-          created_at,
-          customer_id,
-          users(
+          products(
             id,
             name
-          ),
-          order_items(
-            id,
-            quantity,
-            price,
-            observations,
-            status,
-            products(
-              id,
-              name
-            )
           )
-        `)
-        .eq('status', ORDER_STATUS.DELIVERED)
-        .eq('paid', false)
-        .order('created_at', { ascending: false })
+        )
+      `)
+      .eq('status', 'delivered')
+      .or('paid.is.null,paid.eq.false')
+      .order('created_at', { ascending: false })
+      
+    console.log('📋 Raw query result - orders count:', orders?.length || 0)
+    console.log('📋 Raw query result - first order:', orders?.[0])
 
       if (error) {
         console.error('❌ Query error:', error)

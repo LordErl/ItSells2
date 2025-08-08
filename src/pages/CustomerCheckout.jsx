@@ -37,11 +37,14 @@ export default function CustomerCheckout() {
 
   const loadCustomerBill = async (customerIdToLoad = customerId) => {
     try {
+      console.log('🔍 CustomerCheckout: Loading bill for customer:', customerIdToLoad)
       setLoading(true)
       setError(null)
 
       // Get customer bills using the same logic as cashier
+      console.log('📞 CustomerCheckout: Calling CashierService.getOccupiedTablesForPayment...')
       const result = await CashierService.getOccupiedTablesForPayment()
+      console.log('📋 CustomerCheckout: CashierService result:', result)
       
       if (result.customers && result.customers.length > 0) {
         // Find the specific customer
