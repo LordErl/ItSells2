@@ -239,4 +239,32 @@ export class PaymentAPI {
 
     return true
   }
+
+  /**
+   * Configure webhook for automatic payment confirmation
+   */
+  static async configureWebhook(paymentId, orderId) {
+    try {
+      const webhookData = {
+        payment_id: paymentId,
+        order_id: orderId,
+        callback_url: `${window.location.origin}/api/payment-webhook`,
+        events: ['payment.approved', 'payment.rejected']
+      }
+
+      const response = await fetch(`${PAYMENT_API.BASE_URL}/webhook/configure`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookData)
+      })
+
+      const data = await response.json()
+      return { success: response.ok, data }
+    } catch (error) {
+      console.error('❌ Webhook configuration error:', error)
+      return { success: false, error: error.message }
+    }
+  }
 }
