@@ -12,6 +12,7 @@ import StaffDashboard from './pages/StaffDashboard'
 import OperationalDashboard from './pages/OperationalDashboard'
 import CustomerMenu from './pages/CustomerMenu'
 import CustomerAccount from './pages/CustomerAccount'
+import CustomerCheckout from './pages/CustomerCheckout'
 import SupplierDashboard from './pages/SupplierDashboard'
 import CashierDashboard from './pages/CashierDashboard'
 import ProductManagement from './pages/ProductManagement'
@@ -104,6 +105,15 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={['customer']}>
               <CustomerAccount />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/customer-checkout" 
+          element={
+            <ProtectedRoute allowedRoles={['customer']}>
+              <CustomerCheckout />
             </ProtectedRoute>
           } 
         />

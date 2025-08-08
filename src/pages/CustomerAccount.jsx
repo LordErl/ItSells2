@@ -204,15 +204,26 @@ export default function CustomerAccount() {
               R$ {(accountData?.current_bill || user?.to_pay || 0).toFixed(2)}
             </p>
             {(accountData?.current_bill || user?.to_pay || 0) > 0 && (
-              <button
-                onClick={() => {
-                  setPaymentAmount((accountData?.current_bill || user?.to_pay || 0).toString())
-                  setShowPaymentModal(true)
-                }}
-                className="btn-luxury w-full"
-              >
-                Pagar Conta
-              </button>
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    setPaymentAmount((accountData?.current_bill || user?.to_pay || 0).toString())
+                    setShowPaymentModal(true)
+                  }}
+                  className="btn-luxury w-full"
+                >
+                  Pagar Parcial
+                </button>
+                <button
+                  onClick={() => {
+                    // Redirect to cashier flow for complete bill closure
+                    window.location.href = `/customer-checkout?customer_id=${user.id}`
+                  }}
+                  className="w-full px-4 py-3 bg-neon-green/20 text-neon-green rounded-lg hover:bg-neon-green/30 transition-colors font-medium border border-neon-green/30"
+                >
+                  💳 Fechar Conta Completa
+                </button>
+              </div>
             )}
           </div>
 

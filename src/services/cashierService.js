@@ -92,21 +92,24 @@ export class CashierService {
       
       console.log('✅ Database connection successful')
 
-      // Get orders that are not paid and not cancelled
-      console.log('🔍 Looking for unpaid orders...')
+      // Get orders that are delivered but not paid yet
+      console.log('🔍 Looking for delivered orders that need payment...')
       const { data: orders, error } = await supabase
         .from(TABLES.ORDERS)
         .select(`
           id,
           table_id,
+          table_number,
           status,
           paid,
+          total_amount,
           created_at,
-          users!inner(
+          customer_id,
+          users(
             id,
             name
           ),
-          order_items!inner(
+          order_items(
             id,
             quantity,
             price,
@@ -118,8 +121,8 @@ export class CashierService {
             )
           )
         `)
+        .eq('status', ORDER_STATUS.DELIVERED)
         .eq('paid', false)
-        .neq('status', 'cancelled')
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -144,18 +147,16 @@ export class CashierService {
       
       orders.forEach(order => {
         try {
-          // Check if all order items are delivered
+          // Since we're only getting DELIVERED orders, we can process them directly
           const hasItems = order.order_items && order.order_items.length > 0
-          const allItemsDelivered = hasItems && 
-            order.order_items.every(item => item.status === ORDER_ITEM_STATUS.DELIVERED)
           
-          console.log(`📦 Order ${order.id}: ${order.order_items?.length || 0} items, all delivered: ${allItemsDelivered}`)
+          console.log(`📦 Order ${order.id}: ${order.order_items?.length || 0} items, status: ${order.status}`)
           
-          if (hasItems && allItemsDelivered) {
-            const customerId = order.users?.id
+          if (hasItems) {
+            const customerId = order.customer_id || order.users?.id
             const customerName = order.users?.name || 'Cliente Sem Nome'
-            const tableId = order.table_id || 0 // Default table for customers without table
-            const tableNumber = tableId
+            const tableId = order.table_id || 0
+            const tableNumber = order.table_number || tableId
             
             // Group by customer (individual bills)
             if (!customersMap.has(customerId)) {
@@ -173,6 +174,7 @@ export class CashierService {
             customer.orders.push({
               id: order.id,
               created_at: order.created_at,
+              total_amount: order.total_amount,
               order_items: order.order_items
             })
             
