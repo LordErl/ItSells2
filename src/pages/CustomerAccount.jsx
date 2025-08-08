@@ -39,6 +39,24 @@ export default function CustomerAccount() {
     }
   }, [user])
 
+  // Check if there are unpaid delivered orders
+  const hasUnpaidDeliveredOrders = () => {
+    return orderHistory.some(order => 
+      order.status === ORDER_STATUS.DELIVERED && 
+      (order.paid === null || order.paid === false)
+    )
+  }
+
+  // Calculate total amount from unpaid delivered orders
+  const getUnpaidDeliveredTotal = () => {
+    return orderHistory
+      .filter(order => 
+        order.status === ORDER_STATUS.DELIVERED && 
+        (order.paid === null || order.paid === false)
+      )
+      .reduce((total, order) => total + parseFloat(order.total_amount || order.total || 0), 0)
+  }
+
   const loadAccountData = async () => {
     try {
       setLoading(true)
@@ -201,13 +219,14 @@ export default function CustomerAccount() {
             </div>
             <h3 className="text-lg font-bold text-gold mb-2">Saldo Atual</h3>
             <p className="text-3xl font-bold text-red-400 mb-4">
-              R$ {(accountData?.current_bill || user?.to_pay || 0).toFixed(2)}
+              R$ {(getUnpaidDeliveredTotal() + (accountData?.current_bill || user?.to_pay || 0)).toFixed(2)}
             </p>
-            {(accountData?.current_bill || user?.to_pay || 0) > 0 && (
+            {(hasUnpaidDeliveredOrders() || (accountData?.current_bill || user?.to_pay || 0) > 0) && (
               <div className="space-y-3">
                 <button
                   onClick={() => {
-                    setPaymentAmount((accountData?.current_bill || user?.to_pay || 0).toString())
+                    const totalAmount = getUnpaidDeliveredTotal() + (accountData?.current_bill || user?.to_pay || 0)
+                    setPaymentAmount(totalAmount.toString())
                     setShowPaymentModal(true)
                   }}
                   className="btn-luxury w-full"
