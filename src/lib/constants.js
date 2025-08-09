@@ -64,6 +64,7 @@ export const PAYMENT_METHODS = {
 // Payment API endpoints
 export const PAYMENT_API = {
   BASE_URL: 'https://itserpapi.duckdns.org:8009',
+  FALLBACK_URL: 'http://191.31.165.81:8009', // HTTP temporário para IP
   ENDPOINTS: {
     PIX: '/cora/cobranca',
     CREDIT_CARD: '/mercadopago/processar-pagamento-token'
