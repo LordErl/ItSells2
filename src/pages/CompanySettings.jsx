@@ -26,18 +26,11 @@ export default function CompanySettings() {
     cash_enabled: true
   })
 
-  // Debug: Verificar autenticação e role
-  useEffect(() => {
-    if (user && user.role !== 'admin') {
-      navigate('/unauthorized')
-    }
-  }, [user, navigate])
-
   // Verificar se é admin
   useEffect(() => {
-    if (user && user.role !== 'ADMIN') {
+    if (user && user.role !== 'admin') {
       toast.error('Acesso negado. Apenas administradores podem acessar esta página.')
-      navigate('/dashboard')
+      navigate('/unauthorized')
     }
   }, [user, navigate])
 
@@ -370,7 +363,7 @@ export default function CompanySettings() {
           <div className="flex justify-end space-x-4">
             <button
               type="button"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/admin')}
               className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
             >
               Cancelar
