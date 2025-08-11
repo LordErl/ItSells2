@@ -1,47 +1,84 @@
 import { PAYMENT_API, PAYMENT_METHODS } from '../lib'
 
 export class PaymentAPI {
-  
+  // Cache para URL funcionando
+  static workingUrlCache = null
+  static cacheExpiry = 0
+
   /**
-   * Create PIX payment via Cora API
+   * Detecta automaticamente qual URL da API está funcionando
+   */
+  static async getWorkingApiUrl() {
+    // Verifica cache
+    if (this.workingUrlCache && Date.now() < this.cacheExpiry) {
+      return this.workingUrlCache
+    }
+
+    const urls = [PAYMENT_API.BASE_URL, PAYMENT_API.FALLBACK_URL]
+    
+    for (const url of urls) {
+      try {
+        console.log(`🔍 Testando URL: ${url}`)
+        const response = await fetch(`${url}/docs`, { 
+          method: 'GET',
+          timeout: 5000
+        })
+        
+        if (response.ok) {
+          console.log(`✅ URL funcionando: ${url}`)
+          this.workingUrlCache = url
+          this.cacheExpiry = Date.now() + (5 * 60 * 1000) // 5 minutes
+          return url
+        }
+      } catch (error) {
+        console.log(`❌ Falha em ${url}: ${error.message}`)
+      }
+    }
+    
+    throw new Error('Nenhuma URL de API está funcionando')
+  }
+
+  /**
+   * Faz requisição para API com fallback automático
+   */
+  static async makeApiRequest(endpoint, options) {
+    const baseUrl = await this.getWorkingApiUrl()
+    
+    const response = await fetch(`${baseUrl}${endpoint}`, {
+      method: options.method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: options.body
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || 'Erro na API de pagamento')
+    }
+
+    return await response.json()
+  }
+
+  /**
+   * Create PIX payment via Banco Cora API
    */
   static async createPixPayment(paymentData) {
     try {
       const payload = {
-        nome: paymentData.customerName,
-        email: paymentData.customerEmail,
-        documento: paymentData.customerDocument,
-        telefone: paymentData.customerPhone,
-        endereco: {
-          street: "Rua Principal",
-          number: "123",
-          district: "Centro",
-          city: "São Paulo",
-          state: "SP",
-          complement: "",
-          zip_code: "01000-000"
-        },
         amount: Math.round(paymentData.amount * 100), // Convert to centavos
+        nome: paymentData.customerName,
+        documento: paymentData.customerDocument,
         descricao: `Pagamento Mesa ${paymentData.tableNumber} - ItSells`,
         referencia: paymentData.reference,
         vencimento: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Tomorrow
         tipo: "pix"
       }
 
-      const response = await fetch(`${PAYMENT_API.BASE_URL}${PAYMENT_API.ENDPOINTS.PIX}`, {
+      const data = await this.makeApiRequest(PAYMENT_API.ENDPOINTS.PIX, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(payload)
       })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Erro na API de pagamento')
-      }
-
-      const data = await response.json()
       
       return {
         success: true,
@@ -53,9 +90,43 @@ export class PaymentAPI {
         }
       }
     } catch (error) {
+      console.error('❌ PIX payment error:', error)
       return {
         success: false,
-        error: error.message || 'Erro ao criar pagamento PIX'
+        error: error.message
+      }
+    }
+  }
+
+  /**
+   * Create PIX payment with retry logic
+   */
+  static async createPixPaymentWithRetry(paymentData, maxRetries = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const result = await this.createPixPayment(paymentData)
+        if (result.success) {
+          return result
+        }
+        
+        if (attempt === maxRetries) {
+          return result
+        }
+        
+        // Exponential backoff
+        const delay = Math.pow(2, attempt) * 1000
+        await new Promise(resolve => setTimeout(resolve, delay))
+        
+      } catch (error) {
+        if (attempt === maxRetries) {
+          return {
+            success: false,
+            error: error.message
+          }
+        }
+        
+        const delay = Math.pow(2, attempt) * 1000
+        await new Promise(resolve => setTimeout(resolve, delay))
       }
     }
   }
@@ -63,7 +134,7 @@ export class PaymentAPI {
   /**
    * Create credit card payment via Mercado Pago API
    */
-  static async createCardPayment(paymentData) {
+  static async processCreditCardPayment(paymentData) {
     try {
       const payload = {
         token: paymentData.token,
@@ -75,27 +146,17 @@ export class PaymentAPI {
         payer: {
           email: paymentData.customerEmail,
           identification: {
-            type: "CPF",
+            type: paymentData.customerDocument.length === 11 ? "CPF" : "CNPJ",
             number: paymentData.customerDocument
           }
         },
         external_reference: paymentData.reference
       }
 
-      const response = await fetch(`${PAYMENT_API.BASE_URL}${PAYMENT_API.ENDPOINTS.CREDIT_CARD}`, {
+      const data = await this.makeApiRequest(PAYMENT_API.ENDPOINTS.CREDIT_CARD, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(payload)
       })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Erro na API de pagamento')
-      }
-
-      const data = await response.json()
       
       return {
         success: true,
@@ -107,6 +168,7 @@ export class PaymentAPI {
         }
       }
     } catch (error) {
+      console.error('❌ Credit card payment error:', error)
       return {
         success: false,
         error: error.message || 'Erro ao processar pagamento com cartão'
@@ -115,37 +177,59 @@ export class PaymentAPI {
   }
 
   /**
+   * Create credit card payment with retry logic
+   */
+  static async processCreditCardPaymentWithRetry(paymentData, maxRetries = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const result = await this.processCreditCardPayment(paymentData)
+        if (result.success) {
+          return result
+        }
+        
+        if (attempt === maxRetries) {
+          return result
+        }
+        
+        // Exponential backoff
+        const delay = Math.pow(2, attempt) * 1000
+        await new Promise(resolve => setTimeout(resolve, delay))
+        
+      } catch (error) {
+        if (attempt === maxRetries) {
+          return {
+            success: false,
+            error: error.message
+          }
+        }
+        
+        const delay = Math.pow(2, attempt) * 1000
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+    }
+  }
+
+  /**
    * Check payment status (polling)
    */
-  static async checkPaymentStatus(paymentReference, paymentType) {
+  static async checkPaymentStatus(paymentReference) {
     try {
-      // For now, we'll implement a simple status check
-      // In a real implementation, you might have a specific endpoint for this
-      const endpoint = paymentType === PAYMENT_METHODS.PIX 
-        ? PAYMENT_API.ENDPOINTS.PIX 
-        : PAYMENT_API.ENDPOINTS.CREDIT_CARD
-
-      const response = await fetch(`${PAYMENT_API.BASE_URL}/status/${paymentReference}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+      const data = await this.makeApiRequest(`${PAYMENT_API.ENDPOINTS.STATUS}/${paymentReference}`, {
+        method: 'GET'
       })
-
-      if (!response.ok) {
-        throw new Error('Erro ao verificar status do pagamento')
-      }
-
-      const data = await response.json()
       
       return {
         success: true,
         data: {
+          id: data.id,
           status: data.status,
-          paid: data.status === 'approved'
+          amount: data.amount,
+          paid_at: data.paid_at,
+          reference: paymentReference
         }
       }
     } catch (error) {
+      console.error('❌ Payment status check error:', error)
       return {
         success: false,
         error: error.message || 'Erro ao verificar status do pagamento'
@@ -252,16 +336,12 @@ export class PaymentAPI {
         events: ['payment.approved', 'payment.rejected']
       }
 
-      const response = await fetch(`${PAYMENT_API.BASE_URL}/webhook/configure`, {
+      const data = await this.makeApiRequest('/webhook/configure', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(webhookData)
       })
 
-      const data = await response.json()
-      return { success: response.ok, data }
+      return { success: true, data }
     } catch (error) {
       console.error('❌ Webhook configuration error:', error)
       return { success: false, error: error.message }

@@ -67,7 +67,8 @@ export const PAYMENT_API = {
   FALLBACK_URL: 'http://191.31.165.81:8009', // HTTP temporário para IP
   ENDPOINTS: {
     PIX: '/cora/cobranca',
-    CREDIT_CARD: '/mercadopago/processar-pagamento-token'
+    CREDIT_CARD: '/mercadopago/processar-pagamento-token',
+    STATUS: '/status' // Para verificar status de pagamentos
   }
 }
 
