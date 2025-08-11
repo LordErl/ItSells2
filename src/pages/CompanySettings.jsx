@@ -26,6 +26,21 @@ export default function CompanySettings() {
     cash_enabled: true
   })
 
+  // Debug: Verificar autenticação e role
+  useEffect(() => {
+    console.log('🔍 CompanySettings Debug:')
+    console.log('- User:', user)
+    console.log('- User Role:', user?.role)
+    console.log('- Is Authenticated:', !!user)
+    
+    if (user && user.role !== 'ADMIN') {
+      console.log('❌ Usuário não é ADMIN, redirecionando...')
+      navigate('/unauthorized')
+    } else if (user && user.role === 'ADMIN') {
+      console.log('✅ Usuário é ADMIN, acesso permitido')
+    }
+  }, [user, navigate])
+
   // Verificar se é admin
   useEffect(() => {
     if (user && user.role !== 'ADMIN') {
