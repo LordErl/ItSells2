@@ -28,29 +28,18 @@ import './App.css'
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, isAuthenticated, loading } = useAuth()
   
-  // Debug: Log user info
-  console.log('🔍 ProtectedRoute Debug:')
-  console.log('- User:', user)
-  console.log('- User Role:', user?.role)
-  console.log('- Allowed Roles:', allowedRoles)
-  console.log('- Is Authenticated:', isAuthenticated)
-  console.log('- Loading:', loading)
-  
   if (loading) {
     return <LoadingScreen />
   }
   
   if (!isAuthenticated) {
-    console.log('❌ Not authenticated, redirecting to login')
     return <Navigate to="/login" replace />
   }
   
   if (allowedRoles && !allowedRoles.includes(user?.role)) {
-    console.log(`❌ Role '${user?.role}' not in allowed roles:`, allowedRoles)
     return <Navigate to="/unauthorized" replace />
   }
   
-  console.log('✅ Access granted')
   return children
 }
 
@@ -70,7 +59,7 @@ function AppContent() {
         <Route 
           path="/admin-dashboard" 
           element={
-            <ProtectedRoute allowedRoles={['ADMIN']}>
+            <ProtectedRoute allowedRoles={['admin']}>
               <AdminDashboard />
             </ProtectedRoute>
           } 
@@ -80,7 +69,7 @@ function AppContent() {
         <Route 
           path="/admin" 
           element={
-            <ProtectedRoute allowedRoles={['ADMIN']}>
+            <ProtectedRoute allowedRoles={['admin']}>
               <AdminDashboard />
             </ProtectedRoute>
           } 
@@ -89,17 +78,7 @@ function AppContent() {
         <Route 
           path="/company-settings" 
           element={
-            <ProtectedRoute allowedRoles={['ADMIN']}>
-              <CompanySettings />
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* Temporary route for debugging - remove after fixing role */}
-        <Route 
-          path="/company-settings-temp" 
-          element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'STAFF', 'CUSTOMER', 'admin', 'staff', 'customer']}>
+            <ProtectedRoute allowedRoles={['admin']}>
               <CompanySettings />
             </ProtectedRoute>
           } 
@@ -108,7 +87,7 @@ function AppContent() {
         <Route 
           path="/staff/*" 
           element={
-            <ProtectedRoute allowedRoles={['STAFF', 'ADMIN']}>
+            <ProtectedRoute allowedRoles={['staff', 'admin']}>
               <StaffDashboard />
             </ProtectedRoute>
           } 
@@ -117,7 +96,7 @@ function AppContent() {
         <Route 
           path="/staff-dashboard" 
           element={
-            <ProtectedRoute allowedRoles={['STAFF', 'ADMIN']}>
+            <ProtectedRoute allowedRoles={['staff', 'admin']}>
               <StaffDashboard />
             </ProtectedRoute>
           } 
@@ -126,7 +105,7 @@ function AppContent() {
         <Route 
           path="/operational-dashboard" 
           element={
-            <ProtectedRoute allowedRoles={['STAFF', 'ADMIN']}>
+            <ProtectedRoute allowedRoles={['staff', 'admin']}>
               <OperationalDashboard />
             </ProtectedRoute>
           } 
@@ -135,7 +114,7 @@ function AppContent() {
         <Route 
           path="/customer/*" 
           element={
-            <ProtectedRoute allowedRoles={['CUSTOMER']}>
+            <ProtectedRoute allowedRoles={['customer']}>
               <CustomerMenu />
             </ProtectedRoute>
           } 
@@ -144,7 +123,7 @@ function AppContent() {
         <Route 
           path="/customer-account" 
           element={
-            <ProtectedRoute allowedRoles={['CUSTOMER']}>
+            <ProtectedRoute allowedRoles={['customer']}>
               <CustomerAccount />
             </ProtectedRoute>
           } 
@@ -153,7 +132,7 @@ function AppContent() {
         <Route 
           path="/customer-checkout" 
           element={
-            <ProtectedRoute allowedRoles={['CUSTOMER']}>
+            <ProtectedRoute allowedRoles={['customer']}>
               <CustomerCheckout />
             </ProtectedRoute>
           } 
@@ -200,9 +179,9 @@ function AppContent() {
           path="/" 
           element={
             isAuthenticated ? (
-              user?.role === 'ADMIN' ? <Navigate to="/admin" replace /> :
-              user?.role === 'STAFF' ? <Navigate to="/staff" replace /> :
-              user?.role === 'CUSTOMER' ? <Navigate to="/customer" replace /> :
+              user?.role === 'admin' ? <Navigate to="/admin" replace /> :
+              user?.role === 'staff' ? <Navigate to="/staff" replace /> :
+              user?.role === 'customer' ? <Navigate to="/customer" replace /> :
               <Navigate to="/login" replace />
             ) : (
               <Navigate to="/login" replace />

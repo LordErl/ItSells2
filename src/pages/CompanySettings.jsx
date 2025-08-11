@@ -28,16 +28,8 @@ export default function CompanySettings() {
 
   // Debug: Verificar autenticação e role
   useEffect(() => {
-    console.log('🔍 CompanySettings Debug:')
-    console.log('- User:', user)
-    console.log('- User Role:', user?.role)
-    console.log('- Is Authenticated:', !!user)
-    
-    if (user && user.role !== 'ADMIN') {
-      console.log('❌ Usuário não é ADMIN, redirecionando...')
+    if (user && user.role !== 'admin') {
       navigate('/unauthorized')
-    } else if (user && user.role === 'ADMIN') {
-      console.log('✅ Usuário é ADMIN, acesso permitido')
     }
   }, [user, navigate])
 
