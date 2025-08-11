@@ -1,4 +1,5 @@
 import { PAYMENT_API, PAYMENT_METHODS } from '../lib'
+import { CompanyService } from './companyService'
 
 export class PaymentAPI {
   // Cache para URL funcionando
@@ -65,15 +66,11 @@ export class PaymentAPI {
    */
   static async createPixPayment(paymentData) {
     try {
-      const payload = {
-        amount: Math.round(paymentData.amount * 100), // Convert to centavos
-        nome: paymentData.customerName,
-        documento: paymentData.customerDocument,
-        descricao: `Pagamento Mesa ${paymentData.tableNumber} - ItSells`,
-        referencia: paymentData.reference,
-        vencimento: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Tomorrow
-        tipo: "pix"
-      }
+      // Buscar dados da empresa
+      const companyData = await CompanyService.getCompanyData()
+      
+      // Formatar payload com dados da empresa
+      const payload = CompanyService.formatForPixPayment(companyData, paymentData)
 
       const data = await this.makeApiRequest(PAYMENT_API.ENDPOINTS.PIX, {
         method: 'POST',

@@ -162,6 +162,15 @@ export default function AdminDashboard() {
                   <span className="text-neon-cyan">Ver</span>
                 </div>
               </button>
+              <button 
+                onClick={() => navigate('/company-settings')}
+                className="w-full nav-item text-left"
+              >
+                <div className="flex items-center justify-between">
+                  <span>🏢 Configurações da Empresa</span>
+                  <span className="text-yellow-400">PIX</span>
+                </div>
+              </button>
             </div>
           </div>
 

@@ -17,6 +17,7 @@ import SupplierDashboard from './pages/SupplierDashboard'
 import CashierDashboard from './pages/CashierDashboard'
 import ProductManagement from './pages/ProductManagement'
 import DailyReport from './pages/DailyReport'
+import CompanySettings from './pages/CompanySettings'
 import QRScanner from './components/QRScanner'
 import LoadingScreen from './components/LoadingScreen'
 
@@ -56,10 +57,19 @@ function AppContent() {
         
         {/* Protected Routes */}
         <Route 
-          path="/admin/*" 
+          path="/admin-dashboard" 
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/company-settings" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <CompanySettings />
             </ProtectedRoute>
           } 
         />
