@@ -137,7 +137,20 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
           }
         }
 
-        setPixData(result.data)
+        // Aguardar um pouco e buscar dados completos do PIX
+        setTimeout(async () => {
+          const pixDataResult = await PaymentAPI.checkPaymentStatus(paymentRequest.data.id)
+          if (pixDataResult.success && pixDataResult.data.pixCode) {
+            setPixData({
+              ...result.data,
+              pixCode: pixDataResult.data.pixCode,
+              qrCodeUrl: pixDataResult.data.qrCodeUrl
+            })
+          } else {
+            setPixData(result.data)
+          }
+        }, 2000)
+        
         setStep('waiting')
         // Usar o paymentId (UUID) para polling de status
         startPaymentPolling(paymentRequest.data.id, paymentRequest.data.id)
@@ -158,8 +171,8 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
         // Usar o paymentId (UUID) para verificar status via idempotency_key
         const statusResult = await PaymentAPI.checkPaymentStatus(paymentId)
         
-        // Verificar se o pagamento foi aprovado (status pode ser 'OPEN' ou 'PAID')
-        if (statusResult.success && (statusResult.data.status === 'PAID' || statusResult.data.paid_at)) {
+        // Verificar se o pagamento foi aprovado
+        if (statusResult.success && statusResult.data.status === 'approved') {
           clearInterval(interval)
           setPollingInterval(null)
           
