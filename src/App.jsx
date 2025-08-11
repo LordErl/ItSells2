@@ -28,18 +28,29 @@ import './App.css'
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, isAuthenticated, loading } = useAuth()
   
+  // Debug: Log user info
+  console.log('🔍 ProtectedRoute Debug:')
+  console.log('- User:', user)
+  console.log('- User Role:', user?.role)
+  console.log('- Allowed Roles:', allowedRoles)
+  console.log('- Is Authenticated:', isAuthenticated)
+  console.log('- Loading:', loading)
+  
   if (loading) {
     return <LoadingScreen />
   }
   
   if (!isAuthenticated) {
+    console.log('❌ Not authenticated, redirecting to login')
     return <Navigate to="/login" replace />
   }
   
   if (allowedRoles && !allowedRoles.includes(user?.role)) {
+    console.log(`❌ Role '${user?.role}' not in allowed roles:`, allowedRoles)
     return <Navigate to="/unauthorized" replace />
   }
   
+  console.log('✅ Access granted')
   return children
 }
 
