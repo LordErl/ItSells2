@@ -162,6 +162,7 @@ export default function AdminDashboard() {
                   <span className="text-neon-cyan">Ver</span>
                 </div>
               </button>
+              {/* Configurações da Empresa - PIX Integration */}
               <button 
                 onClick={() => navigate('/company-settings')}
                 className="w-full nav-item text-left"
