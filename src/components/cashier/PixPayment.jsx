@@ -139,7 +139,8 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
 
         setPixData(result.data)
         setStep('waiting')
-        startPaymentPolling(reference, paymentRequest.data.id)
+        // Usar o ID retornado pelo Banco Cora para polling
+        startPaymentPolling(result.data.id, paymentRequest.data.id)
       } else {
         throw new Error(result.error)
       }
@@ -151,22 +152,24 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
     }
   }
 
-  const startPaymentPolling = (reference, paymentId) => {
+  const startPaymentPolling = (coraPaymentId, paymentId) => {
     const interval = setInterval(async () => {
       try {
-        const statusResult = await PaymentAPI.checkPaymentStatus(reference, 'pix')
+        // Usar o ID do Banco Cora para verificar status
+        const statusResult = await PaymentAPI.checkPaymentStatus(coraPaymentId)
         
-        if (statusResult.success && statusResult.data.paid) {
+        // Verificar se o pagamento foi aprovado (status pode ser 'OPEN' ou 'PAID')
+        if (statusResult.success && (statusResult.data.status === 'PAID' || statusResult.data.paid_at)) {
           clearInterval(interval)
           setPollingInterval(null)
           
           // Update payment status
-          await CashierService.updatePaymentStatus(paymentId, 'approved', reference)
+          await CashierService.updatePaymentStatus(paymentId, 'approved', paymentReference)
           
           setStep('success')
           setTimeout(() => {
             onPaymentSuccess({
-              reference,
+              reference: paymentReference,
               method: 'pix',
               amount: totals.total
             })
