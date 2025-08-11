@@ -162,14 +162,14 @@ export default function AdminDashboard() {
                   <span className="text-neon-cyan">Ver</span>
                 </div>
               </button>
-              {/* Configurações da Empresa - PIX Integration */}
+              {/* Configurações da Empresa - PIX Integration - Force Rebuild v2 */}
               <button 
                 onClick={() => navigate('/company-settings')}
-                className="w-full nav-item text-left"
+                className="w-full nav-item text-left hover:bg-gold/10 transition-colors"
               >
                 <div className="flex items-center justify-between">
                   <span>🏢 Configurações da Empresa</span>
-                  <span className="text-yellow-400">PIX</span>
+                  <span className="text-yellow-400 font-semibold">PIX</span>
                 </div>
               </button>
             </div>
