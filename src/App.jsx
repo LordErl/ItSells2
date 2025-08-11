@@ -68,7 +68,7 @@ function AppContent() {
         <Route 
           path="/company-settings" 
           element={
-            <ProtectedRoute allowedRoles={['admin']}>
+            <ProtectedRoute allowedRoles={['ADMIN']}>
               <CompanySettings />
             </ProtectedRoute>
           } 
