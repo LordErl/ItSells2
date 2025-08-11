@@ -95,6 +95,16 @@ function AppContent() {
           } 
         />
         
+        {/* Temporary route for debugging - remove after fixing role */}
+        <Route 
+          path="/company-settings-temp" 
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'STAFF', 'CUSTOMER', 'admin', 'staff', 'customer']}>
+              <CompanySettings />
+            </ProtectedRoute>
+          } 
+        />
+        
         <Route 
           path="/staff/*" 
           element={
