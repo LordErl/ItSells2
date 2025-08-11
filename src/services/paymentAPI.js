@@ -207,11 +207,11 @@ export class PaymentAPI {
   }
 
   /**
-   * Check payment status (polling)
+   * Get payment data including status and QR code
    */
   static async checkPaymentStatus(paymentReference) {
     try {
-      const data = await this.makeApiRequest(`${PAYMENT_API.ENDPOINTS.STATUS}/${paymentReference}`, {
+      const data = await this.makeApiRequest(`${PAYMENT_API.ENDPOINTS.GET_PAYMENT_DATA}/${paymentReference}`, {
         method: 'GET'
       })
       
@@ -220,16 +220,23 @@ export class PaymentAPI {
         data: {
           id: data.id,
           status: data.status,
-          amount: data.amount,
-          paid_at: data.paid_at,
-          reference: paymentReference
+          amount: parseFloat(data.valor) / 100, // Converter de centavos
+          paid_at: data.status === 'approved' ? data.criado_em : null,
+          reference: data.referencia_externa,
+          pixCode: data.url_pagamento,
+          qrCodeUrl: data.url_pagamento,
+          customerName: data.nome,
+          customerDocument: data.documento,
+          paymentType: data.tipo,
+          origin: data.origem,
+          createdAt: data.criado_em
         }
       }
     } catch (error) {
-      console.error('❌ Payment status check error:', error)
+      console.error('❌ Payment data fetch error:', error)
       return {
         success: false,
-        error: error.message || 'Erro ao verificar status do pagamento'
+        error: error.message || 'Erro ao obter dados do pagamento'
       }
     }
   }

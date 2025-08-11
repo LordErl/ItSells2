@@ -68,7 +68,8 @@ export const PAYMENT_API = {
   ENDPOINTS: {
     PIX: '/cora/cobranca',
     CREDIT_CARD: '/mercadopago/processar-pagamento-token',
-    STATUS: '/status' // Para verificar status de pagamentos
+    GET_PAYMENT_DATA: '/pagamento/obter-dados', // Para obter dados do pagamento
+    CONFIRM_PAYMENT: '/confirmar-pagamento' // Para confirmar pagamento manualmente
   }
 }
 
