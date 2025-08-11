@@ -112,7 +112,7 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
         customerPhone: customerData.phone.replace(/\D/g, ''),
         amount: totals.total,
         tableNumber: selectedTable.number || selectedTable.table_number,
-        reference: reference
+        reference: paymentRequest.data.id // Usar o UUID do payment como idempotency_key
       }
 
       const result = await PaymentAPI.createPixPayment(paymentData)
@@ -139,8 +139,8 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
 
         setPixData(result.data)
         setStep('waiting')
-        // Usar o ID retornado pelo Banco Cora para polling
-        startPaymentPolling(result.data.id, paymentRequest.data.id)
+        // Usar o paymentId (UUID) para polling de status
+        startPaymentPolling(paymentRequest.data.id, paymentRequest.data.id)
       } else {
         throw new Error(result.error)
       }
@@ -152,11 +152,11 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
     }
   }
 
-  const startPaymentPolling = (coraPaymentId, paymentId) => {
+  const startPaymentPolling = (paymentId, internalPaymentId) => {
     const interval = setInterval(async () => {
       try {
-        // Usar o ID do Banco Cora para verificar status
-        const statusResult = await PaymentAPI.checkPaymentStatus(coraPaymentId)
+        // Usar o paymentId (UUID) para verificar status via idempotency_key
+        const statusResult = await PaymentAPI.checkPaymentStatus(paymentId)
         
         // Verificar se o pagamento foi aprovado (status pode ser 'OPEN' ou 'PAID')
         if (statusResult.success && (statusResult.data.status === 'PAID' || statusResult.data.paid_at)) {
@@ -164,7 +164,7 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
           setPollingInterval(null)
           
           // Update payment status
-          await CashierService.updatePaymentStatus(paymentId, 'approved', paymentReference)
+          await CashierService.updatePaymentStatus(internalPaymentId, 'approved', paymentReference)
           
           setStep('success')
           setTimeout(() => {
