@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import QRCode from 'qrcode'
 import { PaymentAPI } from '../../services/paymentAPI'
 import { CashierService } from '../../services/cashierService'
 
@@ -10,6 +11,7 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
     phone: ''
   })
   const [pixData, setPixData] = useState(null)
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [step, setStep] = useState('form') // 'form', 'processing', 'waiting', 'success'
@@ -141,11 +143,14 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
         setTimeout(async () => {
           const pixDataResult = await PaymentAPI.checkPaymentStatus(paymentRequest.data.id)
           if (pixDataResult.success && pixDataResult.data.pixCode) {
-            setPixData({
+            const updatedPixData = {
               ...result.data,
               pixCode: pixDataResult.data.pixCode,
               qrCodeUrl: pixDataResult.data.qrCodeUrl
-            })
+            }
+            setPixData(updatedPixData)
+            // Gerar QR code a partir do código PIX
+            await generateQRCode(pixDataResult.data.pixCode)
           } else {
             setPixData(result.data)
           }
@@ -213,6 +218,22 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
     }
   }
 
+  const generateQRCode = async (pixCode) => {
+    try {
+      const qrCodeUrl = await QRCode.toDataURL(pixCode, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      })
+      setQrCodeDataUrl(qrCodeUrl)
+    } catch (error) {
+      console.error('Erro ao gerar QR code:', error)
+    }
+  }
+
   if (step === 'processing') {
     return (
       <div className="bg-dark-card rounded-lg p-6">
@@ -235,15 +256,18 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
 
         {/* QR Code Display */}
         <div className="bg-white p-4 rounded-lg mb-6 mx-auto max-w-xs">
-          {pixData.qrCodeUrl ? (
+          {qrCodeDataUrl ? (
             <img 
-              src={pixData.qrCodeUrl} 
+              src={qrCodeDataUrl} 
               alt="QR Code PIX" 
               className="w-full h-auto"
             />
           ) : (
             <div className="aspect-square bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-500">QR Code</span>
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto mb-2"></div>
+                <span className="text-gray-500 text-sm">Gerando QR Code...</span>
+              </div>
             </div>
           )}
         </div>
