@@ -242,6 +242,21 @@ export class CashierService {
       if (isCustomerPayment) {
         paymentData.customer_id = tableOrCustomerId
         paymentData.table_id = null // Explicitly set to null for customer payments
+        
+        // Get pending orders for this customer to associate with payment
+        const { data: orders, error: ordersError } = await supabase
+          .from(TABLES.ORDERS)
+          .select('id')
+          .eq('customer_id', tableOrCustomerId)
+          .in('status', ['pending', 'confirmed', 'preparing', 'ready', 'delivered'])
+          .eq('paid', false)
+          .order('created_at', { ascending: false })
+          .limit(1)
+        
+        if (!ordersError && orders && orders.length > 0) {
+          paymentData.order_id = orders[0].id
+          console.log('🔗 Associated payment with order:', orders[0].id)
+        }
       } else {
         paymentData.table_id = tableOrCustomerId
         paymentData.customer_id = null // Explicitly set to null for table payments
@@ -280,14 +295,37 @@ export class CashierService {
         updateData.external_reference = externalReference
       }
 
+      // If payment is approved, also set paid_at timestamp
+      if (status === 'approved') {
+        updateData.paid_at = new Date().toISOString()
+      }
+
       const { data, error } = await supabase
         .from(TABLES.PAYMENTS)
         .update(updateData)
         .eq('id', paymentId)
-        .select()
+        .select('*, order_id')
         .single()
 
       if (error) throw error
+
+      // If payment is approved and has an associated order, mark the order as paid
+      if (status === 'approved' && data.order_id) {
+        console.log('💰 Marking order as paid:', data.order_id)
+        const { error: orderError } = await supabase
+          .from(TABLES.ORDERS)
+          .update({ 
+            paid: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', data.order_id)
+        
+        if (orderError) {
+          console.error('❌ Error updating order paid status:', orderError)
+        } else {
+          console.log('✅ Order marked as paid successfully')
+        }
+      }
 
       return { success: true, data }
     } catch (error) {
