@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, ClockIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { StoreService } from '../services/storeService';
+import { supabase } from '../lib';
 import anime from 'animejs/lib/anime.es.js';
 
 const OrderTracking = () => {
@@ -79,7 +80,7 @@ const OrderTracking = () => {
       console.log('Loading order data for orderId:', orderId, 'user.id:', user.id);
       
       // Primeiro, buscar dados do pedido sem filtro de customer_id
-      const { data: orderData, error: orderError } = await StoreService.supabase
+      const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .select('*')
         .eq('id', orderId)
@@ -102,7 +103,7 @@ const OrderTracking = () => {
       }
 
       // Buscar itens do pedido com produtos
-      const { data: itemsData, error: itemsError } = await StoreService.supabase
+      const { data: itemsData, error: itemsError } = await supabase
         .from('order_items')
         .select(`
           *,
@@ -111,7 +112,7 @@ const OrderTracking = () => {
             name,
             description,
             price,
-            image_url,
+            image_path,
             prep_time
           )
         `)
@@ -244,7 +245,7 @@ const OrderTracking = () => {
                     <div className="lg:w-1/3">
                       <div className="relative">
                         <img
-                          src={item.products?.image_url || '/api/placeholder/300/200'}
+                          src={item.products?.image_path || '/api/placeholder/300/200'}
                           alt={item.products?.name}
                           className="w-full h-64 lg:h-48 object-cover rounded-xl shadow-lg"
                           onError={(e) => {
