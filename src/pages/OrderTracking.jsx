@@ -12,6 +12,7 @@ const OrderTracking = () => {
   const [order, setOrder] = useState(null);
   const [orderItems, setOrderItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Status messages gourmet
@@ -75,16 +76,30 @@ const OrderTracking = () => {
   const loadOrderData = async () => {
     try {
       setLoading(true);
+      console.log('Loading order data for orderId:', orderId, 'user.id:', user.id);
       
-      // Buscar dados do pedido
+      // Primeiro, buscar dados do pedido sem filtro de customer_id
       const { data: orderData, error: orderError } = await StoreService.supabase
         .from('orders')
         .select('*')
         .eq('id', orderId)
-        .eq('customer_id', user.id)
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('Order error:', orderError);
+        throw orderError;
+      }
+
+      console.log('Order data found:', orderData);
+
+      // Verificar se o usuário tem permissão para ver este pedido
+      // (pode ser customer_id ou table_id se o usuário estiver na mesa)
+      if (orderData.customer_id !== user.id && orderData.table_id !== user.on_table) {
+        console.log('User does not have permission to view this order');
+        console.log('Order customer_id:', orderData.customer_id, 'User id:', user.id);
+        console.log('Order table_id:', orderData.table_id, 'User table:', user.on_table);
+        throw new Error('Unauthorized');
+      }
 
       // Buscar itens do pedido com produtos
       const { data: itemsData, error: itemsError } = await StoreService.supabase
@@ -107,8 +122,12 @@ const OrderTracking = () => {
 
       setOrder(orderData);
       setOrderItems(itemsData || []);
+      setError(null); // Limpar erro se sucesso
     } catch (error) {
       console.error('Erro ao carregar dados do pedido:', error);
+      setError(error.message || 'Erro ao carregar pedido');
+      setOrder(null);
+      setOrderItems([]);
     } finally {
       setLoading(false);
     }
@@ -148,17 +167,34 @@ const OrderTracking = () => {
     );
   }
 
-  if (!order) {
+  if (error || !order) {
+    const errorMessage = error === 'Unauthorized' 
+      ? 'Você não tem permissão para visualizar este pedido'
+      : error || 'Pedido não encontrado';
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-400 text-lg mb-4">Pedido não encontrado</p>
-          <button
-            onClick={() => navigate('/customer-account')}
-            className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-2 rounded-lg font-semibold transition-colors"
-          >
-            Voltar à Conta
-          </button>
+          <div className="mb-6">
+            <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <p className="text-red-400 text-lg mb-4">{errorMessage}</p>
+          <div className="space-y-3">
+            <button
+              onClick={() => loadOrderData()}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors mr-3"
+            >
+              Tentar Novamente
+            </button>
+            <button
+              onClick={() => navigate('/customer-account')}
+              className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-2 rounded-lg font-semibold transition-colors"
+            >
+              Voltar à Conta
+            </button>
+          </div>
         </div>
       </div>
     );
