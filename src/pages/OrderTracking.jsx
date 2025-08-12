@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, ClockIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { StoreService } from '../services/storeService';
+import { ImageUploadService } from '../services/imageUploadService';
 import { supabase } from '../lib';
 import anime from 'animejs/lib/anime.es.js';
 
@@ -245,7 +246,7 @@ const OrderTracking = () => {
                     <div className="lg:w-1/3">
                       <div className="relative">
                         <img
-                          src={item.products?.image_path || '/api/placeholder/300/200'}
+                          src={item.products?.image_path ? ImageUploadService.getImageUrl(item.products.image_path) : '/api/placeholder/300/200'}
                           alt={item.products?.name}
                           className="w-full h-64 lg:h-48 object-cover rounded-xl shadow-lg"
                           onError={(e) => {
