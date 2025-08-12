@@ -86,10 +86,6 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
         return
       }
 
-      // Generate payment reference
-      const reference = PaymentAPI.generatePaymentReference(selectedTable.id)
-      setPaymentReference(reference)
-
       // Create payment request in database
       const isCustomerPayment = selectedTable.type === 'customer'
       const paymentRequest = await CashierService.createPaymentRequest(
@@ -104,6 +100,8 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
         throw new Error(paymentRequest.error)
       }
 
+      // Usar o UUID do payment como referência
+      setPaymentReference(paymentRequest.data.id)
       setStep('processing')
 
       // Create PIX payment via API

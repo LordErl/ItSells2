@@ -46,10 +46,6 @@ const CardPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
         return
       }
 
-      // Generate payment reference
-      const reference = PaymentAPI.generatePaymentReference(selectedTable.id)
-      setPaymentReference(reference)
-
       // Create payment request in database
       const isCustomerPayment = selectedTable.type === 'customer'
       const paymentRequest = await CashierService.createPaymentRequest(
@@ -64,6 +60,8 @@ const CardPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
         throw new Error(paymentRequest.error)
       }
 
+      // Usar o UUID do payment como referência
+      setPaymentReference(paymentRequest.data.id)
       setStep('processing')
 
       // Create card payment via API (this will return a tokenize checkout URL)
@@ -74,7 +72,7 @@ const CardPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
         customerPhone: customerData.phone.replace(/\D/g, ''),
         amount: totals.total,
         tableNumber: selectedTable.number,
-        reference: reference
+        reference: paymentRequest.data.id
       }
 
       const result = await PaymentAPI.createCardPayment(paymentData)

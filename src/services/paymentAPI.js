@@ -241,14 +241,7 @@ export class PaymentAPI {
     }
   }
 
-  /**
-   * Generate unique payment reference
-   */
-  static generatePaymentReference(tableId) {
-    const timestamp = Date.now()
-    const random = Math.random().toString(36).substring(2, 8)
-    return `MESA${tableId}_${timestamp}_${random}`.toUpperCase()
-  }
+
 
   /**
    * Format amount for display
