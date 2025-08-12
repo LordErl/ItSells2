@@ -244,19 +244,24 @@ export class CashierService {
         paymentData.table_id = null // Explicitly set to null for customer payments
         
         // Get pending orders for this customer to associate with payment
-        const { data: orders, error: ordersError } = await supabase
-          .from(TABLES.ORDERS)
-          .select('id')
-          .eq('customer_id', tableOrCustomerId)
-          .in('status', ['pending', 'confirmed', 'preparing', 'ready', 'delivered'])
-          .eq('paid', false)
-          .order('created_at', { ascending: false })
-          .limit(1)
-        
-        if (!ordersError && orders && orders.length > 0) {
-          paymentData.order_id = orders[0].id
-          console.log('🔗 Associated payment with order:', orders[0].id)
-        }
+      console.log('🔍 Looking for orders for customer:', tableOrCustomerId)
+      const { data: orders, error: ordersError } = await supabase
+        .from(TABLES.ORDERS)
+        .select('id, status, paid, customer_id')
+        .eq('customer_id', tableOrCustomerId)
+        .in('status', ['pending', 'confirmed', 'preparing', 'ready', 'delivered'])
+        .or('paid.is.null,paid.eq.false')
+        .order('created_at', { ascending: false })
+        .limit(1)
+      
+      console.log('📋 Orders query result:', { orders, ordersError })
+      
+      if (!ordersError && orders && orders.length > 0) {
+        paymentData.order_id = orders[0].id
+        console.log('🔗 Associated payment with order:', orders[0].id)
+      } else {
+        console.log('⚠️ No unpaid orders found for customer:', tableOrCustomerId)
+      }  
       } else {
         paymentData.table_id = tableOrCustomerId
         paymentData.customer_id = null // Explicitly set to null for table payments
