@@ -258,7 +258,7 @@ export class MercadoPagoService {
         .from('payments')
         .insert({
           external_id: result.id.toString(),
-          payment_method: 'card',
+          payment_method: 'cartao',
           amount: paymentData.amount,
           status: result.status,
           installments: paymentData.installments || 1,

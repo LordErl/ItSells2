@@ -452,8 +452,8 @@ export default function CustomerAccount() {
                     <input
                       type="radio"
                       name="paymentMethod"
-                      value="card"
-                      checked={selectedPaymentMethod === 'card'}
+                      value="cartao"
+                      checked={selectedPaymentMethod === 'cartao'}
                       onChange={(e) => setSelectedPaymentMethod(e.target.value)}
                       className="text-neon-cyan"
                     />
