@@ -13,6 +13,7 @@ import OperationalDashboard from './pages/OperationalDashboard'
 import CustomerMenu from './pages/CustomerMenu'
 import CustomerAccount from './pages/CustomerAccount'
 import CustomerCheckout from './pages/CustomerCheckout'
+import OrderTracking from './pages/OrderTracking'
 import SupplierDashboard from './pages/SupplierDashboard'
 import CashierDashboard from './pages/CashierDashboard'
 import ProductManagement from './pages/ProductManagement'
@@ -134,6 +135,15 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={['customer']}>
               <CustomerCheckout />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/order-tracking/:orderId" 
+          element={
+            <ProtectedRoute allowedRoles={['customer']}>
+              <OrderTracking />
             </ProtectedRoute>
           } 
         />

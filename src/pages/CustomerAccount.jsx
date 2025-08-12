@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useStore } from '../contexts/StoreContext'
 import { StoreService } from '../services/storeService'
@@ -7,6 +8,7 @@ import anime from 'animejs'
 import { toast } from 'react-hot-toast'
 
 export default function CustomerAccount() {
+  const navigate = useNavigate()
   const { user, logout } = useAuth()
   const { customerAccount, processPayment } = useStore()
   const [accountData, setAccountData] = useState(null)
@@ -302,12 +304,27 @@ export default function CustomerAccount() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)} bg-black/20`}>
-                        {getStatusText(order.status)}
-                      </span>
-                      <p className="text-gold font-bold mt-1">
-                        R$ {parseFloat(order.total || 0).toFixed(2)}
-                      </p>
+                      <div className="flex flex-col items-end space-y-2">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)} bg-black/20`}>
+                          {getStatusText(order.status)}
+                        </span>
+                        <p className="text-gold font-bold">
+                          R$ {parseFloat(order.total || 0).toFixed(2)}
+                        </p>
+                        {/* Botão de acompanhar pedido para pedidos em andamento */}
+                        {['pending', 'producing', 'ready', 'delivering'].includes(order.status) && (
+                          <button
+                            onClick={() => navigate(`/order-tracking/${order.id}`)}
+                            className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors text-xs font-medium border border-blue-500/30 flex items-center space-x-1"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <span>Acompanhar</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                   
