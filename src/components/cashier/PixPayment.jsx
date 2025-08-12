@@ -180,12 +180,18 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
           setPollingInterval(null)
           
           // Update payment status
-          await CashierService.updatePaymentStatus(internalPaymentId, 'approved', paymentReference)
+          const referenceToUse = paymentReference || internalPaymentId
+          console.log('🔍 Debug payment update:', {
+            internalPaymentId,
+            paymentReference,
+            referenceToUse
+          })
+          await CashierService.updatePaymentStatus(internalPaymentId, 'approved', referenceToUse)
           
           setStep('success')
           setTimeout(() => {
             onPaymentSuccess({
-              reference: paymentReference,
+              reference: referenceToUse,
               method: 'pix',
               amount: totals.total
             })
@@ -305,7 +311,7 @@ const PixPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gold/70">Referência:</span>
-            <span className="text-gold font-medium text-sm">{paymentReference}</span>
+            <span className="text-gold font-medium text-sm">{paymentReference || 'Gerando...'}</span>
           </div>
         </div>
 
