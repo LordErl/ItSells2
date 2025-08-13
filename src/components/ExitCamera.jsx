@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { FaceRecognitionService } from '../services/faceRecognitionService'
 import { StoreService } from '../services/storeService'
 
 const ExitCamera = () => {
@@ -87,7 +86,8 @@ const ExitCamera = () => {
         if (!blob) return
 
         try {
-          // Recognize face
+          // Recognize face using dynamic import
+          const { default: FaceRecognitionService } = await import('../services/faceRecognitionService')
           const recognitionResult = await FaceRecognitionService.recognizeFace(blob)
           
           if (recognitionResult.success && recognitionResult.data.person) {
@@ -125,24 +125,14 @@ const ExitCamera = () => {
 
   const checkPaymentStatus = async (personId) => {
     try {
-      // Check if person has any unpaid orders
-      const { data: orders, error } = await supabase
-        .from('orders')
-        .select(`
-          id,
-          status,
-          total_amount,
-          payment_status,
-          created_at
-        `)
-        .eq('customer_id', personId)
-        .in('status', ['delivered', 'completed'])
-        .eq('payment_status', 'pending')
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-
-      const unpaidOrders = orders || []
+      // Check if person has any unpaid orders using StoreService
+      const result = await StoreService.getUnpaidOrdersByCustomer(personId)
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao buscar pedidos pendentes')
+      }
+      
+      const unpaidOrders = result.data || []
       const totalUnpaid = unpaidOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0)
 
       if (unpaidOrders.length === 0) {

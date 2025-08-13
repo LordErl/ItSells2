@@ -276,6 +276,77 @@ export class FaceRecognitionService {
   getSimilarityThreshold() {
     return this.SIMILARITY_THRESHOLD
   }
+
+  /**
+   * Recognize face from image blob and match against stored faces
+   */
+  async recognizeFace(imageBlob) {
+    try {
+      // Convert blob to image element
+      const imageUrl = URL.createObjectURL(imageBlob)
+      const img = new Image()
+      
+      return new Promise((resolve) => {
+        img.onload = async () => {
+          try {
+            // Extract face descriptor from image
+            const extractResult = await this.extractFaceDescriptor(img)
+            
+            if (!extractResult.success) {
+              resolve({
+                success: false,
+                error: extractResult.error
+              })
+              return
+            }
+
+            // For now, return mock data since we don't have a user database
+            // In a real implementation, you would:
+            // 1. Query stored face descriptors from database
+            // 2. Use findBestMatch to compare against stored faces
+            // 3. Return the matched person data
+            
+            resolve({
+              success: true,
+              data: {
+                person: {
+                  id: 'mock-person-1',
+                  name: 'Cliente Reconhecido',
+                  confidence: extractResult.confidence || 0.8
+                },
+                faceDescriptor: extractResult.descriptor
+              }
+            })
+            
+          } catch (error) {
+            resolve({
+              success: false,
+              error: error.message
+            })
+          } finally {
+            URL.revokeObjectURL(imageUrl)
+          }
+        }
+        
+        img.onerror = () => {
+          resolve({
+            success: false,
+            error: 'Erro ao carregar imagem'
+          })
+          URL.revokeObjectURL(imageUrl)
+        }
+        
+        img.src = imageUrl
+      })
+      
+    } catch (error) {
+      console.error('FaceRecognitionService: Recognition error:', error)
+      return {
+        success: false,
+        error: error.message
+      }
+    }
+  }
 }
 
 // Export singleton instance

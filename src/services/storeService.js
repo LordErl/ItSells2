@@ -1723,4 +1723,32 @@ export class StoreService {
       }
     }
   }
+
+  // Get unpaid orders by customer ID
+  static async getUnpaidOrdersByCustomer(customerId) {
+    try {
+      const { data: orders, error } = await supabase
+        .from(TABLES.ORDERS)
+        .select(`
+          id,
+          status,
+          total_amount,
+          payment_status,
+          created_at
+        `)
+        .eq('customer_id', customerId)
+        .in('status', ['delivered', 'completed'])
+        .eq('payment_status', 'pending')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      return { success: true, data: orders || [] }
+    } catch (error) {
+      return {
+        success: false,
+        error: handleError(error)
+      }
+    }
+  }
 }
