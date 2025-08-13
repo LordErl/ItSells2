@@ -22,6 +22,13 @@ import CompanySettings from './pages/CompanySettings'
 import QRScanner from './components/QRScanner'
 import LoadingScreen from './components/LoadingScreen'
 
+// Staff Components
+import BatchManagement from './components/BatchManagement'
+import ExpirationControl from './components/ExpirationControl'
+import MenuManagement from './components/MenuManagement'
+import ExitCamera from './components/ExitCamera'
+import StaffDailyReport from './components/StaffDailyReport'
+
 // Styles
 import './App.css'
 
@@ -180,6 +187,62 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={['admin', 'staff']}>
               <DailyReport />
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Staff Module Routes */}
+        <Route 
+          path="/batch-management" 
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'staff']}>
+              <BatchManagement />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/expiration-control" 
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'staff']}>
+              <ExpirationControl />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/menu-management" 
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'staff']}>
+              <MenuManagement />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/exit-camera" 
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'staff']}>
+              <ExitCamera />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/staff-daily-report" 
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'staff']}>
+              <StaffDailyReport />
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Order Management - Redirect to Operational Dashboard */}
+        <Route 
+          path="/order-management" 
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'staff']}>
+              <Navigate to="/operational-dashboard" replace />
             </ProtectedRoute>
           } 
         />
