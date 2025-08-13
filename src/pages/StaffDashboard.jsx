@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useStore } from '../contexts/StoreContext'
 import { StoreService } from '../services/storeService'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
-import { ChevronRight, Package } from 'lucide-react'
+import { ChevronRight, Package, TrendingUp } from 'lucide-react'
 import anime from 'animejs'
 
 export default function StaffDashboard() {
