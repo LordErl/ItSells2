@@ -172,6 +172,16 @@ const ExitCamera = () => {
       const result = await StoreService.getUnpaidOrdersByCustomer(personId)
       
       if (!result.success) {
+        // Handle specific error cases
+        if (result.error && result.error.includes('inválido')) {
+          return {
+            status: 'error',
+            message: 'Cliente não encontrado no sistema',
+            canExit: false,
+            unpaidAmount: 0,
+            unpaidOrders: []
+          }
+        }
         throw new Error(result.error || 'Erro ao buscar pedidos pendentes')
       }
       

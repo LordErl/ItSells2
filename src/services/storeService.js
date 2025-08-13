@@ -1727,6 +1727,15 @@ export class StoreService {
   // Get unpaid orders by customer ID
   static async getUnpaidOrdersByCustomer(customerId) {
     try {
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      if (!customerId || !uuidRegex.test(customerId)) {
+        return {
+          success: false,
+          error: 'ID de cliente inválido ou não fornecido'
+        }
+      }
+
       const { data: orders, error } = await supabase
         .from(TABLES.ORDERS)
         .select(`

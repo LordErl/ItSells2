@@ -306,13 +306,17 @@ export class FaceRecognitionService {
             // 2. Use findBestMatch to compare against stored faces
             // 3. Return the matched person data
             
+            // Generate a valid UUID for mock data
+            const mockUUID = 'ebb2070f-16f0-48ef-adf6-e9aa293ac174' // Use existing customer ID from example
+        
             resolve({
               success: true,
               data: {
-                person: {
-                  id: 'mock-person-1',
-                  name: 'Cliente Reconhecido',
-                  confidence: extractResult.confidence || 0.8
+                person: { 
+                  id: mockUUID, 
+                  name: 'Cliente Reconhecido', 
+                  email: 'cliente@exemplo.com',
+                  confidence: extractResult.confidence || 0.8 
                 },
                 faceDescriptor: extractResult.descriptor
               }
