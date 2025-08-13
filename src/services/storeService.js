@@ -470,11 +470,23 @@ export class StoreService {
   // Get dashboard statistics
   static async getDashboardStats() {
     try {
-      // Get pending orders count
-      const { count: pendingOrders } = await supabase
-        .from(TABLES.ORDERS)
+      // Get pending order items count
+      const { count: pendingItems } = await supabase
+        .from(TABLES.ORDER_ITEMS)
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending')
+        .eq('status', ORDER_ITEM_STATUS.PENDING)
+
+      // Get preparing order items count
+      const { count: preparingItems } = await supabase
+        .from(TABLES.ORDER_ITEMS)
+        .select('*', { count: 'exact', head: true })
+        .eq('status', ORDER_ITEM_STATUS.PREPARING)
+
+      // Get ready order items count
+      const { count: readyItems } = await supabase
+        .from(TABLES.ORDER_ITEMS)
+        .select('*', { count: 'exact', head: true })
+        .eq('status', ORDER_ITEM_STATUS.READY)
 
       // Get occupied tables count
       const { count: occupiedTables } = await supabase
@@ -493,9 +505,11 @@ export class StoreService {
       const todayRevenue = payments?.reduce((sum, payment) => sum + parseFloat(payment.amount), 0) || 0
 
       const stats = {
-        pendingOrders: pendingOrders || 0,
+        pendingItems: pendingItems || 0,
+        preparingItems: preparingItems || 0,
+        readyItems: readyItems || 0,
         occupiedTables: occupiedTables || 0,
-        todayRevenue: todayRevenue
+        todaySales: todayRevenue
       }
 
       return { success: true, data: stats }
