@@ -117,15 +117,18 @@ export default function StaffDashboard() {
             <div className="text-center">
               <div className="w-16 h-16 mx-auto mb-4 bg-gold/20 rounded-full flex items-center justify-center">
                 <svg className="w-8 h-8 text-gold" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                  <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" />
                 </svg>
               </div>
               <h3 className="text-lg font-bold text-gold mb-2">Ponto de Pedido</h3>
               <p className="text-gold/70 text-sm mb-4">
-                Criar novos pedidos rapidamente
+                Criar novos pedidos e acompanhar
               </p>
-              <button className="btn-luxury w-full">
-                Novo Pedido
+              <button 
+                onClick={() => navigate('/order-management')}
+                className="px-6 py-3 bg-gold/20 text-gold rounded-lg hover:bg-gold/30 transition-colors w-full font-medium"
+              >
+                NOVO PEDIDO
               </button>
             </div>
           </div>
@@ -140,10 +143,10 @@ export default function StaffDashboard() {
               </div>
               <h3 className="text-lg font-bold text-neon-cyan mb-2">Dashboard Operacional</h3>
               <p className="text-gold/70 text-sm mb-4">
-                Controle de produção e entregas
+                Controle de produção e estoque
               </p>
               <button 
-                onClick={() => window.location.href = '/operational-dashboard'}
+                onClick={() => navigate('/operational-dashboard')}
                 className="px-6 py-3 bg-neon-cyan/20 text-neon-cyan rounded-lg hover:bg-neon-cyan/30 transition-colors w-full font-medium"
               >
                 Abrir Dashboard
@@ -151,12 +154,12 @@ export default function StaffDashboard() {
             </div>
           </div>
 
-          {/* Cash Register */}
+          {/* Cashier */}
           <div className="glass-card p-6">
             <div className="text-center">
               <div className="w-16 h-16 mx-auto mb-4 bg-neon-green/20 rounded-full flex items-center justify-center">
                 <svg className="w-8 h-8 text-neon-green" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zM14 6a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h8zM6 8a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2a2 2 0 012-2h2z" />
+                  <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" />
                 </svg>
               </div>
               <h3 className="text-lg font-bold text-neon-green mb-2">Módulo de Caixa</h3>
@@ -178,32 +181,38 @@ export default function StaffDashboard() {
               <div className="w-16 h-16 mx-auto mb-4 bg-neon-pink/20 rounded-full flex items-center justify-center">
                 <svg className="w-8 h-8 text-neon-pink" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                  <path fillRule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 102 0V3h4v1a1 1 0 102 0V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 102 0V3h4v1a1 1 0 102 0V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 8a1 1 0 100-2 1 1 0 000 2zm3 0a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
                 </svg>
               </div>
               <h3 className="text-lg font-bold text-neon-pink mb-2">Menu</h3>
               <p className="text-gold/70 text-sm mb-4">
                 Atualizar disponibilidade e preços
               </p>
-              <button className="px-6 py-3 bg-neon-pink/20 text-neon-pink rounded-lg hover:bg-neon-pink/30 transition-colors w-full font-medium">
+              <button 
+                onClick={() => navigate('/menu-management')}
+                className="px-6 py-3 bg-neon-pink/20 text-neon-pink rounded-lg hover:bg-neon-pink/30 transition-colors w-full font-medium"
+              >
                 Gerenciar Menu
               </button>
             </div>
           </div>
 
-          {/* Inventory Control */}
+          {/* Expiration Control */}
           <div className="glass-card p-6">
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-yellow-500/20 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+              <div className="w-16 h-16 mx-auto mb-4 bg-yellow-400/20 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-yellow-500 mb-2">Vencimentos</h3>
+              <h3 className="text-lg font-bold text-yellow-400 mb-2">Vencimentos</h3>
               <p className="text-gold/70 text-sm mb-4">
                 Controlar produtos próximos ao vencimento
               </p>
-              <button className="px-6 py-3 bg-yellow-500/20 text-yellow-500 rounded-lg hover:bg-yellow-500/30 transition-colors w-full font-medium">
+              <button 
+                onClick={() => navigate('/expiration-control')}
+                className="px-6 py-3 bg-yellow-400/20 text-yellow-400 rounded-lg hover:bg-yellow-400/30 transition-colors w-full font-medium"
+              >
                 Ver Alertas
               </button>
             </div>
@@ -214,14 +223,17 @@ export default function StaffDashboard() {
             <div className="text-center">
               <div className="w-16 h-16 mx-auto mb-4 bg-red-500/20 rounded-full flex items-center justify-center">
                 <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586l-.707-.707A1 1 0 0013 4H7a1 1 0 00-.707.293L5.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586l-.707-.707A1 1 0 0013 4H7a1 1 0 00-.707.293L5.586 5H4zm6 9a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                 </svg>
               </div>
               <h3 className="text-lg font-bold text-red-500 mb-2">Câmera de Saída</h3>
               <p className="text-gold/70 text-sm mb-4">
                 Monitorar saídas sem pagamento
               </p>
-              <button className="px-6 py-3 bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500/30 transition-colors w-full font-medium">
+              <button 
+                onClick={() => navigate('/exit-camera')}
+                className="px-6 py-3 bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500/30 transition-colors w-full font-medium"
+              >
                 Ativar Câmera
               </button>
             </div>
@@ -233,7 +245,7 @@ export default function StaffDashboard() {
               <div className="w-16 h-16 mx-auto mb-4 bg-purple-500/20 rounded-full flex items-center justify-center">
                 <svg className="w-8 h-8 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                  <path fillRule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 102 0V3h4v1a1 1 0 102 0V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm2.5 6a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm2.45.5a2.5 2.5 0 10-3.9 0 .5.5 0 00.95.5h2a.5.5 0 00.95-.5zM12 9a1 1 0 100 2h3a1 1 0 100-2h-3zm-1-4a1 1 0 011-1h3a1 1 0 110 2h-3a1 1 0 01-1-1z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 102 0V3h4v1a1 1 0 102 0V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 8a1 1 0 100-2 1 1 0 000 2zm3 0a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
                 </svg>
               </div>
               <h3 className="text-lg font-bold text-purple-500 mb-2">Relatório Diário</h3>
@@ -241,10 +253,31 @@ export default function StaffDashboard() {
                 Análise completa das operações
               </p>
               <button 
-                onClick={() => navigate('/daily-report')}
+                onClick={() => navigate('/staff-daily-report')}
                 className="px-6 py-3 bg-purple-500/20 text-purple-500 rounded-lg hover:bg-purple-500/30 transition-colors w-full font-medium"
               >
                 Ver Relatório
+              </button>
+            </div>
+          </div>
+
+          {/* Batch Management */}
+          <div className="glass-card p-6">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-indigo-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-indigo-500 mb-2">Controle de Lotes</h3>
+              <p className="text-gold/70 text-sm mb-4">
+                Gerenciar lotes de produtos
+              </p>
+              <button 
+                onClick={() => navigate('/batch-management')}
+                className="px-6 py-3 bg-indigo-500/20 text-indigo-500 rounded-lg hover:bg-indigo-500/30 transition-colors w-full font-medium"
+              >
+                Gerenciar Lotes
               </button>
             </div>
           </div>
