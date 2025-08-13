@@ -281,6 +281,90 @@ export default function StaffDashboard() {
               </button>
             </div>
           </div>
+
+          {/* Recipe Management Dashboard */}
+          <div className="glass-card p-6">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-orange-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-orange-500 mb-2">Dashboard de Receitas</h3>
+              <p className="text-gold/70 text-sm mb-4">
+                Visão geral do sistema de receitas
+              </p>
+              <button 
+                onClick={() => navigate('/recipe-dashboard')}
+                className="px-6 py-3 bg-orange-500/20 text-orange-500 rounded-lg hover:bg-orange-500/30 transition-colors w-full font-medium"
+              >
+                Abrir Dashboard
+              </button>
+            </div>
+          </div>
+
+          {/* Ingredient Management */}
+          <div className="glass-card p-6">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-green-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-green-500 mb-2">Ingredientes</h3>
+              <p className="text-gold/70 text-sm mb-4">
+                Gerenciar estoque de ingredientes
+              </p>
+              <button 
+                onClick={() => navigate('/ingredients')}
+                className="px-6 py-3 bg-green-500/20 text-green-500 rounded-lg hover:bg-green-500/30 transition-colors w-full font-medium"
+              >
+                Gerenciar Ingredientes
+              </button>
+            </div>
+          </div>
+
+          {/* Recipe Management */}
+          <div className="glass-card p-6">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-blue-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-blue-500 mb-2">Receitas</h3>
+              <p className="text-gold/70 text-sm mb-4">
+                Criar e gerenciar receitas
+              </p>
+              <button 
+                onClick={() => navigate('/recipes')}
+                className="px-6 py-3 bg-blue-500/20 text-blue-500 rounded-lg hover:bg-blue-500/30 transition-colors w-full font-medium"
+              >
+                Gerenciar Receitas
+              </button>
+            </div>
+          </div>
+
+          {/* Sales Integration */}
+          <div className="glass-card p-6">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-teal-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-teal-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm1 2a1 1 0 000 2h6a1 1 0 100-2H7zm6 7a1 1 0 011 1v3a1 1 0 11-2 0v-3a1 1 0 011-1zm-3 3a1 1 0 100 2h.01a1 1 0 100-2H10zm-4 1a1 1 0 011-1h.01a1 1 0 110 2H7a1 1 0 01-1-1zm1-4a1 1 0 100 2h.01a1 1 0 100-2H7zm2 0a1 1 0 100 2h.01a1 1 0 100-2H9zm2 0a1 1 0 100 2h.01a1 1 0 100-2H11z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-teal-500 mb-2">Integração Vendas</h3>
+              <p className="text-gold/70 text-sm mb-4">
+                Demonstração da baixa de estoque
+              </p>
+              <button 
+                onClick={() => navigate('/sales-integration')}
+                className="px-6 py-3 bg-teal-500/20 text-teal-500 rounded-lg hover:bg-teal-500/30 transition-colors w-full font-medium"
+              >
+                Ver Integração
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Recent Orders */}

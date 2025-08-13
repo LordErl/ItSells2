@@ -29,6 +29,12 @@ import MenuManagement from './components/MenuManagement'
 import ExitCamera from './components/ExitCamera'
 import StaffDailyReport from './components/StaffDailyReport'
 
+// Recipe Management Components
+import RecipeManagementDashboard from './components/RecipeManagementDashboard'
+import IngredientManagement from './components/IngredientManagement'
+import RecipeManagement from './components/RecipeManagement'
+import SalesIntegration from './components/SalesIntegration'
+
 // Styles
 import './App.css'
 
@@ -233,6 +239,43 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={['admin', 'staff']}>
               <StaffDailyReport />
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Recipe Management Routes */}
+        <Route 
+          path="/recipe-dashboard" 
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'staff']}>
+              <RecipeManagementDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/ingredients" 
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'staff']}>
+              <IngredientManagement />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/recipes" 
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'staff']}>
+              <RecipeManagement />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/sales-integration" 
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'staff']}>
+              <SalesIntegration />
             </ProtectedRoute>
           } 
         />
