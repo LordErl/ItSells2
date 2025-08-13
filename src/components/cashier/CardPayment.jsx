@@ -51,7 +51,7 @@ const CardPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
       const paymentRequest = await CashierService.createPaymentRequest(
         selectedTable.id,
         totals.total,
-        'cartao',
+        'credit',
         totals.includeServiceCharge,
         isCustomerPayment
       )
@@ -115,7 +115,7 @@ const CardPayment = ({ selectedTable, totals, onPaymentSuccess, onCancel }) => {
         setTimeout(() => {
           onPaymentSuccess({
             reference: paymentReference,
-            method: 'cartao',
+            method: 'credit',
             amount: totals.total
           })
         }, 2000)

@@ -55,7 +55,7 @@ export const PAYMENT_STATUS = {
 // Payment methods
 export const PAYMENT_METHODS = {
   PIX: 'pix',
-  CREDIT_CARD: 'cartao',
+  CREDIT_CARD: 'credit',
   DEBIT: 'debit',
   CREDIT: 'credit',
   CASH: 'cash'
