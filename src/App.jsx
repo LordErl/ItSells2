@@ -33,7 +33,7 @@ import StaffDailyReport from './components/StaffDailyReport'
 import RecipeManagementDashboard from './components/RecipeManagementDashboard'
 import IngredientManagement from './components/IngredientManagement'
 import RecipeManagement from './components/RecipeManagement'
-import SalesIntegration from './components/recipe/SalesIntegration'
+import SalesIntegration from './components/SalesIntegration'
 import StockIntegrationDemo from './components/integration/StockIntegrationDemo'
 
 // Styles
