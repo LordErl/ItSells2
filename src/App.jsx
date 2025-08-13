@@ -33,7 +33,8 @@ import StaffDailyReport from './components/StaffDailyReport'
 import RecipeManagementDashboard from './components/RecipeManagementDashboard'
 import IngredientManagement from './components/IngredientManagement'
 import RecipeManagement from './components/RecipeManagement'
-import SalesIntegration from './components/SalesIntegration'
+import SalesIntegration from './components/recipe/SalesIntegration'
+import StockIntegrationDemo from './components/integration/StockIntegrationDemo'
 
 // Styles
 import './App.css'
@@ -276,6 +277,15 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={['admin', 'staff']}>
               <SalesIntegration />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/stock-integration-demo" 
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'staff']}>
+              <StockIntegrationDemo />
             </ProtectedRoute>
           } 
         />

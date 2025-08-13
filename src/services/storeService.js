@@ -1,5 +1,5 @@
 import { supabase, TABLES, ORDER_STATUS, ORDER_ITEM_STATUS, PAYMENT_STATUS, TABLE_STATUS, handleError, formatDate, parseDate, getTables } from '../lib'
-
+import StockDeductionService from './stockDeductionService'
 
 export class StoreService {
   // ===== PRODUCTS =====
@@ -194,7 +194,45 @@ export class StoreService {
   // Create order
   static async createOrder(orderData) {
     try {
-      const { customer_id, table_id, items, observations } = orderData
+      const { customer_id, table_id, items, observations, validate_stock = true } = orderData
+
+      // Validar disponibilidade de ingredientes antes de criar o pedido
+      if (validate_stock) {
+        try {
+          console.log('🔍 Validando disponibilidade de ingredientes para pedido...');
+          
+          const stockValidation = await StockDeductionService.validateOrderStockAvailability({
+            items: items
+          });
+          
+          if (!stockValidation.success) {
+            console.warn('⚠️ Ingredientes insuficientes:', stockValidation.error);
+            return {
+              success: false,
+              error: `Ingredientes insuficientes: ${stockValidation.error}`,
+              validation_error: true
+            };
+          }
+          
+          if (stockValidation.data && !stockValidation.data.available) {
+            const unavailableItems = stockValidation.data.unavailable_items || [];
+            const itemNames = unavailableItems.map(item => item.product_name || `Produto ${item.product_id}`).join(', ');
+            
+            console.warn('⚠️ Itens indisponíveis:', itemNames);
+            return {
+              success: false,
+              error: `Itens indisponíveis no momento: ${itemNames}`,
+              validation_error: true,
+              unavailable_items: unavailableItems
+            };
+          }
+          
+          console.log('✅ Ingredientes disponíveis para o pedido');
+        } catch (stockError) {
+          console.error('❌ Erro na validação de estoque:', stockError);
+          // Continuar com o pedido mesmo se a validação falhar (modo degradado)
+        }
+      }
 
       // Calculate total
       const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
@@ -866,6 +904,34 @@ export class StoreService {
     }
   }
 
+  // Get order by ID with items
+  static async getOrderById(orderId) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.ORDERS)
+        .select(`
+          *,
+          order_items (
+            *,
+            products (
+              id, name, price
+            )
+          )
+        `)
+        .eq('id', orderId)
+        .single()
+
+      if (error) throw error
+
+      return { success: true, data }
+    } catch (error) {
+      return {
+        success: false,
+        error: handleError(error)
+      }
+    }
+  }
+
   // Update order status
   static async updateOrderStatus(orderId, status) {
     try {
@@ -880,6 +946,34 @@ export class StoreService {
         .single()
 
       if (error) throw error
+
+      // Processar baixa automática quando pedido for confirmado
+      if (status === 'confirmed') {
+        try {
+          console.log('🔄 Processando baixa automática para pedido confirmado:', orderId);
+          
+          // Buscar dados completos do pedido para baixa automática
+          const orderData = await this.getOrderById(orderId);
+          
+          if (orderData.success && orderData.data) {
+            const stockResult = await StockDeductionService.processOrderStockDeduction({
+              id: orderId,
+              items: orderData.data.order_items || [],
+              user_id: orderData.data.customer_id
+            });
+            
+            if (stockResult.success) {
+              console.log('✅ Baixa automática processada com sucesso:', stockResult.data);
+            } else {
+              console.warn('⚠️ Erro na baixa automática:', stockResult.error);
+              // Não falhar a atualização do status por causa da baixa automática
+            }
+          }
+        } catch (stockError) {
+          console.error('❌ Erro ao processar baixa automática:', stockError);
+          // Não falhar a atualização do status por causa da baixa automática
+        }
+      }
 
       return { success: true, data }
     } catch (error) {

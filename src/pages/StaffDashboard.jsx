@@ -82,6 +82,48 @@ export default function StaffDashboard() {
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="metric-card">
+            {/* Integração Vendas */}
+            <Card className="hover:shadow-md transition-shadow cursor-pointer border-teal-200 bg-teal-50" onClick={() => navigate('/sales-integration')}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-teal-100 rounded-lg">
+                      <TrendingUp className="h-5 w-5 text-teal-600" />
+                    </div>
+                    <CardTitle className="text-lg text-teal-900">Integração Vendas</CardTitle>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-teal-600" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-teal-700">
+                  Demonstração da integração completa com o sistema de vendas
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            {/* Teste de Integração */}
+            <Card className="hover:shadow-md transition-shadow cursor-pointer border-purple-200 bg-purple-50" onClick={() => navigate('/stock-integration-demo')}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <Package className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <CardTitle className="text-lg text-purple-900">Teste de Integração</CardTitle>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-purple-600" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-purple-700">
+                  Testar fluxo completo de pedidos com baixa automática
+                </CardDescription>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="metric-card">
             <div className="text-center">
               <p className="text-neon-pink text-2xl font-bold">{stats.pendingOrders}</p>
               <p className="text-gold/80 text-sm">Pendentes</p>
