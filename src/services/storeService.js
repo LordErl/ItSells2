@@ -1285,7 +1285,7 @@ export class StoreService {
           case 'pix':
             customerClosures[customerId].pix += amount
             break
-          case 'card':
+          case 'cartao':
           case 'credit_card':
           case 'debit_card':
             customerClosures[customerId].card += amount
