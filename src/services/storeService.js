@@ -1733,12 +1733,12 @@ export class StoreService {
           id,
           status,
           total_amount,
-          payment_status,
+          paid,
           created_at
         `)
         .eq('customer_id', customerId)
         .in('status', ['delivered', 'completed'])
-        .eq('payment_status', 'pending')
+        .or('paid.is.null,paid.eq.false')
         .order('created_at', { ascending: false })
 
       if (error) throw error

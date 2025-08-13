@@ -4,16 +4,20 @@ import { StoreService } from '../services/storeService'
 const ExitCamera = () => {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
+  const detectionCanvasRef = useRef(null)
   const [isActive, setIsActive] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [detectedPerson, setDetectedPerson] = useState(null)
   const [paymentStatus, setPaymentStatus] = useState(null)
   const [accessLog, setAccessLog] = useState([])
+  const [faceDetections, setFaceDetections] = useState([])
+  const [showFaceDetection, setShowFaceDetection] = useState(true)
   const [settings, setSettings] = useState({
     autoScan: true,
     scanInterval: 3000, // 3 seconds
     alertSound: true,
-    logRetention: 50 // Keep last 50 entries
+    logRetention: 50, // Keep last 50 entries
+    showDetectedFaces: true // Show face detection overlay
   })
 
   useEffect(() => {
@@ -88,29 +92,68 @@ const ExitCamera = () => {
         try {
           // Recognize face using dynamic import
           const { default: FaceRecognitionService } = await import('../services/faceRecognitionService')
-          const recognitionResult = await FaceRecognitionService.recognizeFace(blob)
           
-          if (recognitionResult.success && recognitionResult.data.person) {
-            const person = recognitionResult.data.person
-            setDetectedPerson(person)
+          // First extract face descriptor to get detection info
+          const img = new Image()
+          img.onload = async () => {
+            try {
+              const extractResult = await FaceRecognitionService.extractFaceDescriptor(img)
+              
+              // Update face detections for visualization
+              if (extractResult.success) {
+                const detection = {
+                  id: Date.now(),
+                  timestamp: new Date(),
+                  confidence: extractResult.confidence || 0,
+                  detectionMethod: extractResult.detectionMethod || 'Unknown',
+                  box: extractResult.detection?.box || null
+                }
+                
+                setFaceDetections(prev => [detection, ...prev.slice(0, 4)]) // Keep last 5 detections
+                
+                // Draw detection box if available and enabled
+                if (settings.showDetectedFaces && extractResult.detection?.box && detectionCanvasRef.current) {
+                  drawFaceDetection(extractResult.detection.box)
+                }
+              }
+              
+              // Now proceed with recognition
+              const recognitionResult = await FaceRecognitionService.recognizeFace(blob)
+              
+              if (recognitionResult.success && recognitionResult.data.person) {
+                const person = {
+                  ...recognitionResult.data.person,
+                  detectionInfo: {
+                    confidence: extractResult.confidence || 0,
+                    method: extractResult.detectionMethod || 'Unknown',
+                    timestamp: new Date()
+                  }
+                }
+                setDetectedPerson(person)
 
-            // Check payment status
-            const paymentResult = await checkPaymentStatus(person.id)
-            setPaymentStatus(paymentResult)
+                // Check payment status
+                const paymentResult = await checkPaymentStatus(person.id)
+                setPaymentStatus(paymentResult)
 
-            // Log access attempt
-            logAccessAttempt(person, paymentResult)
+                // Log access attempt
+                logAccessAttempt(person, paymentResult)
 
-            // Play alert sound if enabled
-            if (settings.alertSound) {
-              playAlertSound(paymentResult.status)
+                // Play alert sound if enabled
+                if (settings.alertSound) {
+                  playAlertSound(paymentResult.status)
+                }
+
+              } else {
+                // No face detected or unknown person
+                setDetectedPerson(null)
+                setPaymentStatus(null)
+              }
+            } catch (error) {
+              console.error('Erro na extração facial:', error)
             }
-
-          } else {
-            // No face detected or unknown person
-            setDetectedPerson(null)
-            setPaymentStatus(null)
           }
+          
+          img.src = URL.createObjectURL(blob)
         } catch (error) {
           console.error('Erro no reconhecimento facial:', error)
         }
@@ -210,6 +253,39 @@ const ExitCamera = () => {
 
     oscillator.start(audioContext.currentTime)
     oscillator.stop(audioContext.currentTime + 0.6)
+  }
+
+  const drawFaceDetection = (detectionBox) => {
+    if (!detectionCanvasRef.current || !videoRef.current) return
+    
+    const canvas = detectionCanvasRef.current
+    const ctx = canvas.getContext('2d')
+    
+    // Set canvas size to match video
+    canvas.width = videoRef.current.videoWidth
+    canvas.height = videoRef.current.videoHeight
+    
+    // Clear previous drawings
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    
+    // Draw detection box
+    ctx.strokeStyle = '#00ff00'
+    ctx.lineWidth = 3
+    ctx.strokeRect(
+      detectionBox.x,
+      detectionBox.y,
+      detectionBox.width,
+      detectionBox.height
+    )
+    
+    // Add label
+    ctx.fillStyle = '#00ff00'
+    ctx.font = '16px Arial'
+    ctx.fillText(
+      'Face Detected',
+      detectionBox.x,
+      detectionBox.y - 5
+    )
   }
 
   const formatCurrency = (value) => {
@@ -318,6 +394,14 @@ const ExitCamera = () => {
                 ref={canvasRef}
                 className="hidden"
               />
+              {/* Face Detection Overlay */}
+              {showFaceDetection && (
+                <canvas
+                  ref={detectionCanvasRef}
+                  className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                  style={{ zIndex: 10 }}
+                />
+              )}
               
               {isProcessing && (
                 <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
@@ -369,6 +453,23 @@ const ExitCamera = () => {
                 />
               </div>
 
+              <div className="flex items-center justify-between">
+                <label className="text-gray-300">Mostrar Detecções Faciais</label>
+                <input
+                  type="checkbox"
+                  checked={settings.showDetectedFaces}
+                  onChange={(e) => {
+                    const newValue = e.target.checked
+                    setSettings({
+                      ...settings,
+                      showDetectedFaces: newValue
+                    })
+                    setShowFaceDetection(newValue)
+                  }}
+                  className="w-5 h-5 text-yellow-400 bg-gray-800 border-gray-600 rounded focus:ring-yellow-400"
+                />
+              </div>
+
               <div>
                 <label className="block text-gray-300 mb-2">
                   Intervalo de Escaneamento: {settings.scanInterval / 1000}s
@@ -392,6 +493,57 @@ const ExitCamera = () => {
 
         {/* Detection and Log Section */}
         <div className="space-y-6">
+          {/* Face Detection Info */}
+          <div className="bg-gray-900 rounded-lg p-6 border border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-yellow-400">Detecção Facial</h3>
+              <button
+                onClick={() => setShowFaceDetection(!showFaceDetection)}
+                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                  showFaceDetection 
+                    ? 'bg-green-500 text-white' 
+                    : 'bg-gray-600 text-gray-300'
+                }`}
+              >
+                {showFaceDetection ? 'Ocultar' : 'Mostrar'} Detecções
+              </button>
+            </div>
+            
+            {faceDetections.length > 0 ? (
+              <div className="space-y-2">
+                <div className="text-sm text-gray-400 mb-3">
+                  Últimas {faceDetections.length} detecções:
+                </div>
+                {faceDetections.slice(0, 3).map((detection, index) => (
+                  <div key={detection.id} className="bg-gray-800 rounded-lg p-3 border border-gray-600">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-2 h-2 rounded-full ${
+                          detection.confidence > 0.8 ? 'bg-green-500' : 
+                          detection.confidence > 0.5 ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}></div>
+                        <span className="text-sm text-white">
+                          Confiança: {(detection.confidence * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-400">
+                        {detection.timestamp.toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Método: {detection.detectionMethod}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <span className="text-4xl mb-2 block">👤</span>
+                <p className="text-gray-400">Nenhum rosto detectado ainda</p>
+              </div>
+            )}
+          </div>
+
           {/* Current Detection */}
           {detectedPerson && paymentStatus && (
             <div className={`rounded-lg border-l-4 ${
@@ -404,6 +556,16 @@ const ExitCamera = () => {
                   </h3>
                   <p className="text-lg text-white">{detectedPerson.name}</p>
                   <p className="text-gray-400 text-sm">{detectedPerson.email}</p>
+                  {detectedPerson.detectionInfo && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      <span className="inline-flex items-center space-x-1">
+                        <span>🎯</span>
+                        <span>Confiança: {(detectedPerson.detectionInfo.confidence * 100).toFixed(1)}%</span>
+                        <span className="mx-2">•</span>
+                        <span>Método: {detectedPerson.detectionInfo.method}</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div className={`px-4 py-2 rounded-full text-sm font-medium text-white ${getStatusColor(paymentStatus.status)}`}>
                   {paymentStatus.canExit ? 'LIBERADO' : 'BLOQUEADO'}
