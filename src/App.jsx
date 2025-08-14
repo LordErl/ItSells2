@@ -19,6 +19,7 @@ import CashierDashboard from './pages/CashierDashboard'
 import ProductManagement from './pages/ProductManagement'
 import DailyReport from './pages/DailyReport'
 import CompanySettings from './pages/CompanySettings'
+import Ingredients from './pages/Ingredients'
 import QRScanner from './components/QRScanner'
 import LoadingScreen from './components/LoadingScreen'
 
@@ -258,7 +259,7 @@ function AppContent() {
           path="/ingredients" 
           element={
             <ProtectedRoute allowedRoles={['admin', 'staff']}>
-              <IngredientManagement />
+              <Ingredients />
             </ProtectedRoute>
           } 
         />

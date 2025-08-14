@@ -43,6 +43,30 @@ const IngredientManagement = () => {
   const [showAddIngredient, setShowAddIngredient] = useState(false);
   const [showAddBatch, setShowAddBatch] = useState(false);
   const [selectedIngredient, setSelectedIngredient] = useState(null);
+  
+  // Estados para formulário de ingrediente
+  const [ingredientForm, setIngredientForm] = useState({
+    name: '',
+    category: '',
+    unit_measure: 'kg',
+    supplier: '',
+    cost_per_unit: '',
+    minimum_stock: '',
+    description: ''
+  });
+  
+  // Estados para formulário de lote
+  const [batchForm, setBatchForm] = useState({
+    ingredient_id: '',
+    batch_number: '',
+    quantity: '',
+    unit_cost: '',
+    supplier: '',
+    manufacturing_date: '',
+    expiration_date: '',
+    location: 'estoque_principal',
+    notes: ''
+  });
 
   // Carregar dados iniciais
   useEffect(() => {
@@ -184,6 +208,110 @@ const IngredientManagement = () => {
     const diffTime = expDate - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 7;
+  };
+
+  // Handlers para formulários
+  const handleIngredientFormChange = (field, value) => {
+    setIngredientForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleBatchFormChange = (field, value) => {
+    setBatchForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleCreateIngredient = async () => {
+    if (!ingredientForm.name.trim()) {
+      setError('Nome do ingrediente é obrigatório');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await IngredientService.createIngredient({
+        ...ingredientForm,
+        cost_per_unit: parseFloat(ingredientForm.cost_per_unit) || 0,
+        minimum_stock: parseFloat(ingredientForm.minimum_stock) || 0
+      });
+
+      if (result.success) {
+        setSuccess('Ingrediente criado com sucesso!');
+        setShowAddIngredient(false);
+        setIngredientForm({
+          name: '',
+          category: '',
+          unit_measure: 'kg',
+          supplier: '',
+          cost_per_unit: '',
+          minimum_stock: '',
+          description: ''
+        });
+        await loadIngredients();
+        await loadCategories();
+      } else {
+        setError(result.error);
+      }
+    } catch (error) {
+      setError('Erro ao criar ingrediente');
+      console.error('Erro:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateBatch = async () => {
+    if (!batchForm.ingredient_id || !batchForm.batch_number.trim() || !batchForm.quantity) {
+      setError('Ingrediente, número do lote e quantidade são obrigatórios');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await IngredientService.createIngredientBatch({
+        ...batchForm,
+        quantity: parseFloat(batchForm.quantity),
+        unit_cost: parseFloat(batchForm.unit_cost) || 0
+      });
+
+      if (result.success) {
+        setSuccess('Lote criado com sucesso!');
+        setShowAddBatch(false);
+        setBatchForm({
+          ingredient_id: '',
+          batch_number: '',
+          quantity: '',
+          unit_cost: '',
+          supplier: '',
+          manufacturing_date: '',
+          expiration_date: '',
+          location: 'estoque_principal',
+          notes: ''
+        });
+        await loadBatches();
+        await loadStockSummary();
+      } else {
+        setError(result.error);
+      }
+    } catch (error) {
+      setError('Erro ao criar lote');
+      console.error('Erro:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateBatchNumber = () => {
+    const now = new Date();
+    const year = now.getFullYear().toString().slice(-2);
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `L${year}${month}${day}${random}`;
   };
 
   if (loading) {
@@ -557,6 +685,254 @@ const IngredientManagement = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Modal: Novo Ingrediente */}
+      {showAddIngredient && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-bold mb-4">Novo Ingrediente</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Nome *</label>
+                <Input
+                  value={ingredientForm.name}
+                  onChange={(e) => handleIngredientFormChange('name', e.target.value)}
+                  placeholder="Nome do ingrediente"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Categoria</label>
+                <select
+                  className="w-full p-2 border rounded-md"
+                  value={ingredientForm.category}
+                  onChange={(e) => handleIngredientFormChange('category', e.target.value)}
+                >
+                  <option value="">Selecione uma categoria</option>
+                  <option value="carnes">Carnes</option>
+                  <option value="vegetais">Vegetais</option>
+                  <option value="frutas">Frutas</option>
+                  <option value="laticínios">Laticínios</option>
+                  <option value="grãos">Grãos</option>
+                  <option value="temperos">Temperos</option>
+                  <option value="bebidas">Bebidas</option>
+                  <option value="outros">Outros</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Unidade de Medida</label>
+                <select
+                  className="w-full p-2 border rounded-md"
+                  value={ingredientForm.unit_measure}
+                  onChange={(e) => handleIngredientFormChange('unit_measure', e.target.value)}
+                >
+                  <option value="kg">Quilograma (kg)</option>
+                  <option value="g">Grama (g)</option>
+                  <option value="l">Litro (l)</option>
+                  <option value="ml">Mililitro (ml)</option>
+                  <option value="un">Unidade (un)</option>
+                  <option value="cx">Caixa (cx)</option>
+                  <option value="pct">Pacote (pct)</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Fornecedor</label>
+                <Input
+                  value={ingredientForm.supplier}
+                  onChange={(e) => handleIngredientFormChange('supplier', e.target.value)}
+                  placeholder="Nome do fornecedor"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Custo por Unidade (R$)</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={ingredientForm.cost_per_unit}
+                  onChange={(e) => handleIngredientFormChange('cost_per_unit', e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Estoque Mínimo</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={ingredientForm.minimum_stock}
+                  onChange={(e) => handleIngredientFormChange('minimum_stock', e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Descrição</label>
+                <textarea
+                  className="w-full p-2 border rounded-md"
+                  rows="3"
+                  value={ingredientForm.description}
+                  onChange={(e) => handleIngredientFormChange('description', e.target.value)}
+                  placeholder="Descrição do ingrediente"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowAddIngredient(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCreateIngredient}
+                disabled={loading}
+              >
+                {loading ? 'Criando...' : 'Criar Ingrediente'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Novo Lote */}
+      {showAddBatch && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-bold mb-4">Novo Lote</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Ingrediente *</label>
+                <select
+                  className="w-full p-2 border rounded-md"
+                  value={batchForm.ingredient_id}
+                  onChange={(e) => handleBatchFormChange('ingredient_id', e.target.value)}
+                >
+                  <option value="">Selecione um ingrediente</option>
+                  {ingredients.map(ingredient => (
+                    <option key={ingredient.id} value={ingredient.id}>
+                      {ingredient.name} ({ingredient.unit_measure})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Número do Lote *</label>
+                <div className="flex gap-2">
+                  <Input
+                    value={batchForm.batch_number}
+                    onChange={(e) => handleBatchFormChange('batch_number', e.target.value)}
+                    placeholder="Ex: L240814001"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBatchFormChange('batch_number', generateBatchNumber())}
+                  >
+                    Gerar
+                  </Button>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Quantidade *</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={batchForm.quantity}
+                  onChange={(e) => handleBatchFormChange('quantity', e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Custo Unitário (R$)</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={batchForm.unit_cost}
+                  onChange={(e) => handleBatchFormChange('unit_cost', e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Fornecedor</label>
+                <Input
+                  value={batchForm.supplier}
+                  onChange={(e) => handleBatchFormChange('supplier', e.target.value)}
+                  placeholder="Nome do fornecedor"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Data de Fabricação</label>
+                <Input
+                  type="date"
+                  value={batchForm.manufacturing_date}
+                  onChange={(e) => handleBatchFormChange('manufacturing_date', e.target.value)}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Data de Validade</label>
+                <Input
+                  type="date"
+                  value={batchForm.expiration_date}
+                  onChange={(e) => handleBatchFormChange('expiration_date', e.target.value)}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Localização</label>
+                <select
+                  className="w-full p-2 border rounded-md"
+                  value={batchForm.location}
+                  onChange={(e) => handleBatchFormChange('location', e.target.value)}
+                >
+                  <option value="estoque_principal">Estoque Principal</option>
+                  <option value="geladeira">Geladeira</option>
+                  <option value="freezer">Freezer</option>
+                  <option value="despensa">Despensa</option>
+                  <option value="almoxarifado">Almoxarifado</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Observações</label>
+                <textarea
+                  className="w-full p-2 border rounded-md"
+                  rows="2"
+                  value={batchForm.notes}
+                  onChange={(e) => handleBatchFormChange('notes', e.target.value)}
+                  placeholder="Observações sobre o lote"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowAddBatch(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCreateBatch}
+                disabled={loading}
+              >
+                {loading ? 'Criando...' : 'Criar Lote'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
