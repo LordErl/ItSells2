@@ -28,6 +28,11 @@ import EmployeeManagement from './pages/EmployeeManagement'
 import ScheduleManagement from './pages/ScheduleManagement'
 import PermissionManagement from './pages/PermissionManagement'
 
+// Advanced Features Pages
+import AdvancedReports from './pages/AdvancedReports'
+import SystemSettings from './pages/SystemSettings'
+import BackupManagement from './pages/BackupManagement'
+
 // Staff Components
 import BatchManagement from './components/BatchManagement'
 import ExpirationControl from './components/ExpirationControl'
@@ -129,6 +134,34 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <PermissionManagement />
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Advanced Features Routes */}
+        <Route 
+          path="/advanced-reports" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdvancedReports />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/system-settings" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <SystemSettings />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/backup-management" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <BackupManagement />
             </ProtectedRoute>
           } 
         />

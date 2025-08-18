@@ -582,6 +582,36 @@ export default function AdminDashboard() {
                 ⚠️ Controle Vencimentos
               </button>
             )}
+            
+            {/* Relatórios Avançados */}
+            {quickActionsPermissions.viewReports && (
+              <button 
+                onClick={() => navigate('/advanced-reports')}
+                className="px-4 py-3 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors text-sm font-medium"
+              >
+                📊 Relatórios Avançados
+              </button>
+            )}
+            
+            {/* Configurações do Sistema */}
+            {quickActionsPermissions.manageSettings && (
+              <button 
+                onClick={() => navigate('/system-settings')}
+                className="px-4 py-3 bg-gray-500/20 text-gray-400 rounded-lg hover:bg-gray-500/30 transition-colors text-sm font-medium"
+              >
+                ⚙️ Configurações Sistema
+              </button>
+            )}
+            
+            {/* Gerenciamento de Backup */}
+            {quickActionsPermissions.manageBackups && (
+              <button 
+                onClick={() => navigate('/backup-management')}
+                className="px-4 py-3 bg-indigo-500/20 text-indigo-400 rounded-lg hover:bg-indigo-500/30 transition-colors text-sm font-medium"
+              >
+                💾 Gerenciar Backups
+              </button>
+            )}
           </div>
         </div>
       </div>

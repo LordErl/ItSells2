@@ -35,6 +35,7 @@ export const usePermissions = () => {
       canViewOperationalDashboard: [USER_ROLES.ADMIN, USER_ROLES.STAFF].includes(role),
       canViewFinancialData: [USER_ROLES.ADMIN].includes(role),
       canViewEmployeeData: [USER_ROLES.ADMIN].includes(role),
+      canViewAdvancedReports: [USER_ROLES.ADMIN].includes(role),
 
       // Permissões de ações
       canProcessPayments: [USER_ROLES.ADMIN, USER_ROLES.STAFF, USER_ROLES.CASHIER].includes(role),
@@ -42,6 +43,8 @@ export const usePermissions = () => {
       canCancelOrders: [USER_ROLES.ADMIN, USER_ROLES.STAFF].includes(role),
       canModifyPrices: [USER_ROLES.ADMIN].includes(role),
       canBackupData: [USER_ROLES.ADMIN].includes(role),
+      canManageSystemSettings: [USER_ROLES.ADMIN].includes(role),
+      canManageBackups: [USER_ROLES.ADMIN].includes(role),
 
       // Role específico
       isAdmin: role === USER_ROLES.ADMIN,
@@ -87,7 +90,10 @@ export const getQuickActionsPermissions = (permissions) => {
     cashierModule: permissions.canViewCashierDashboard,
     operationalDashboard: permissions.canViewOperationalDashboard,
     recipes: permissions.canManageRecipes,
-    expirationControl: permissions.canManageExpiration
+    expirationControl: permissions.canManageExpiration,
+    viewReports: permissions.canViewAdvancedReports,
+    manageSettings: permissions.canManageSystemSettings,
+    manageBackups: permissions.canManageBackups
   }
 }
 
