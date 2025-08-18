@@ -334,11 +334,17 @@ const IngredientManagement = () => {
           <p className="text-gray-600">Controle completo de ingredientes e lotes</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setShowAddIngredient(true)}>
+          <Button onClick={() => {
+            console.log('Clicou em Novo Ingrediente');
+            setShowAddIngredient(true);
+          }}>
             <Plus className="h-4 w-4 mr-2" />
             Novo Ingrediente
           </Button>
-          <Button variant="outline" onClick={() => setShowAddBatch(true)}>
+          <Button variant="outline" onClick={() => {
+            console.log('Clicou em Novo Lote');
+            setShowAddBatch(true);
+          }}>
             <Package className="h-4 w-4 mr-2" />
             Novo Lote
           </Button>
@@ -458,7 +464,19 @@ const IngredientManagement = () => {
         <TabsContent value="ingredients">
           <Card>
             <CardHeader>
-              <CardTitle>Lista de Ingredientes</CardTitle>
+              <div className="flex justify-between items-center">
+                <CardTitle>Lista de Ingredientes</CardTitle>
+                <Button 
+                  onClick={() => {
+                    console.log('Clicou em Novo Ingrediente (aba)');
+                    setShowAddIngredient(true);
+                  }}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Ingrediente
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -511,7 +529,19 @@ const IngredientManagement = () => {
         <TabsContent value="batches">
           <Card>
             <CardHeader>
-              <CardTitle>Lotes de Ingredientes</CardTitle>
+              <div className="flex justify-between items-center">
+                <CardTitle>Lotes de Ingredientes</CardTitle>
+                <Button 
+                  onClick={() => {
+                    console.log('Clicou em Novo Lote (aba)');
+                    setShowAddBatch(true);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Lote
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -687,6 +717,7 @@ const IngredientManagement = () => {
       </Tabs>
 
       {/* Modal: Novo Ingrediente */}
+      {console.log('showAddIngredient:', showAddIngredient)}
       {showAddIngredient && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
@@ -800,6 +831,7 @@ const IngredientManagement = () => {
       )}
 
       {/* Modal: Novo Lote */}
+      {console.log('showAddBatch:', showAddBatch)}
       {showAddBatch && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
