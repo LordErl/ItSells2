@@ -468,7 +468,7 @@ export default function AdminDashboard() {
               <h2 className="text-xl font-bold text-gold mb-4">Gestão de Pessoal</h2>
               <div className="space-y-3">
                 <button 
-                  onClick={() => toast.info('👥 Sistema de gestão de funcionários em desenvolvimento')}
+                  onClick={() => navigate('/employee-management')}
                   className="w-full nav-item text-left hover:bg-gold/10 transition-colors"
                 >
                   <div className="flex items-center justify-between">
@@ -477,21 +477,21 @@ export default function AdminDashboard() {
                   </div>
                 </button>
                 <button 
-                  onClick={() => toast.info('📅 Sistema de horários em desenvolvimento')}
+                  onClick={() => navigate('/schedule-management')}
                   className="w-full nav-item text-left hover:bg-neon-cyan/10 transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <span>📅 Horários</span>
-                    <span className="text-neon-cyan">Em breve</span>
+                    <span className="text-neon-cyan">Gerenciar</span>
                   </div>
                 </button>
                 <button 
-                  onClick={() => toast.info('🔐 Sistema de permissões em desenvolvimento')}
+                  onClick={() => navigate('/permission-management')}
                   className="w-full nav-item text-left hover:bg-gold/10 transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <span>🔐 Permissões</span>
-                    <span className="text-gold/60">Em breve</span>
+                    <span className="text-gold/60">Configurar</span>
                   </div>
                 </button>
               </div>

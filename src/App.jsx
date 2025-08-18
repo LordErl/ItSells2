@@ -23,6 +23,11 @@ import Ingredients from './pages/Ingredients'
 import QRScanner from './components/QRScanner'
 import LoadingScreen from './components/LoadingScreen'
 
+// Staff Management Pages
+import EmployeeManagement from './pages/EmployeeManagement'
+import ScheduleManagement from './pages/ScheduleManagement'
+import PermissionManagement from './pages/PermissionManagement'
+
 // Staff Components
 import BatchManagement from './components/BatchManagement'
 import ExpirationControl from './components/ExpirationControl'
@@ -96,6 +101,34 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <CompanySettings />
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Staff Management Routes */}
+        <Route 
+          path="/employee-management" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <EmployeeManagement />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/schedule-management" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <ScheduleManagement />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/permission-management" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <PermissionManagement />
             </ProtectedRoute>
           } 
         />
