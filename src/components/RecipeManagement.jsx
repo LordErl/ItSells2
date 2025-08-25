@@ -121,34 +121,34 @@ const RecipeManagement = () => {
   // Funções para criação de receita
   const handleCreateRecipe = async () => {
     if (!newRecipe.name.trim()) {
-      setError('Nome da receita é obrigatório');
+      setError('O nome da receita é obrigatório');
       return;
     }
     
     if (selectedIngredients.length === 0) {
-      setError('Adicione pelo menos um ingrediente à receita');
+      setError('A receita deve ter pelo menos um ingrediente');
       return;
     }
 
     setLoading(true);
-    try {
-      const recipeData = {
-        ...newRecipe,
-        ingredients: selectedIngredients
-      };
-      
-      const result = await RecipeService.createRecipe(recipeData);
-      
-      if (result.success) {
-        setSuccess('Receita criada com sucesso!');
-        setShowCreateRecipe(false);
-        resetRecipeForm();
-        await loadRecipes();
-      } else {
-        setError(result.error);
-      }
-    } catch (error) {
-      setError('Erro ao criar receita');
+    setError('');
+    setSuccess('');
+
+    const recipeData = {
+      ...newRecipe,
+      preparation_time_minutes: parseInt(newRecipe.preparation_time_minutes, 10),
+      ingredients: selectedIngredients
+    };
+    
+    const result = await RecipeService.createRecipe(recipeData);
+    
+    if (result.success) {
+      setSuccess('Receita criada com sucesso!');
+      setShowCreateRecipe(false);
+      resetRecipeForm();
+      await loadRecipes();
+    } else {
+      setError(result.error);
     } finally {
       setLoading(false);
     }
@@ -240,35 +240,35 @@ const RecipeManagement = () => {
 
   const handleUpdateRecipe = async () => {
     if (!newRecipe.name.trim()) {
-      setError('Nome da receita é obrigatório');
+      setError('O nome da receita é obrigatório');
       return;
     }
     
     if (selectedIngredients.length === 0) {
-      setError('Adicione pelo menos um ingrediente à receita');
+      setError('A receita deve ter pelo menos um ingrediente');
       return;
     }
 
     setLoading(true);
-    try {
-      const recipeData = {
-        ...newRecipe,
-        ingredients: selectedIngredients
-      };
-      
-      const result = await RecipeService.updateRecipe(editingRecipe.id, recipeData);
-      
-      if (result.success) {
-        setSuccess('Receita atualizada com sucesso!');
-        setShowEditRecipe(false);
-        setEditingRecipe(null);
-        resetRecipeForm();
-        await loadRecipes();
-      } else {
-        setError(result.error);
-      }
-    } catch (error) {
-      setError('Erro ao atualizar receita');
+    setError('');
+    setSuccess('');
+
+    const recipeData = {
+      ...newRecipe,
+      preparation_time_minutes: parseInt(newRecipe.preparation_time_minutes, 10),
+      ingredients: selectedIngredients
+    };
+    
+    const result = await RecipeService.updateRecipe(editingRecipe.id, recipeData);
+    
+    if (result.success) {
+      setSuccess('Receita atualizada com sucesso!');
+      setShowEditRecipe(false);
+      setEditingRecipe(null);
+      resetRecipeForm();
+      await loadRecipes();
+    } else {
+      setError(result.error);
     } finally {
       setLoading(false);
     }
