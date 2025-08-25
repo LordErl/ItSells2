@@ -68,9 +68,8 @@ const RecipeManagement = () => {
       ]);
     } catch (error) {
       setError('Erro ao carregar dados iniciais');
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   const loadRecipes = async () => {
@@ -149,9 +148,8 @@ const RecipeManagement = () => {
       await loadRecipes();
     } else {
       setError(result.error);
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   const resetRecipeForm = () => {
@@ -269,9 +267,8 @@ const RecipeManagement = () => {
       await loadRecipes();
     } else {
       setError(result.error);
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   const handleCancelEdit = () => {
