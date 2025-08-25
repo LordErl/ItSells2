@@ -16,11 +16,8 @@ class EmployeeService {
           name,
           email,
           role,
-          phone,
-          document,
-          hire_date,
-          salary,
-          status,
+          cpf,
+          active,
           created_at,
           updated_at
         `)
@@ -47,11 +44,8 @@ class EmployeeService {
           name,
           email,
           role,
-          phone,
-          document,
-          hire_date,
-          salary,
-          status,
+          cpf,
+          active,
           created_at,
           updated_at
         `)
@@ -77,11 +71,9 @@ class EmployeeService {
           name: employeeData.name,
           email: employeeData.email,
           role: employeeData.role,
-          phone: employeeData.phone || null,
-          document: employeeData.document || null,
-          hire_date: employeeData.hire_date || new Date().toISOString().split('T')[0],
-          salary: employeeData.salary || null,
-          status: employeeData.status || 'active'
+          cpf: employeeData.cpf || null,
+          password: employeeData.password || 'temp123',
+          active: employeeData.active !== undefined ? employeeData.active : true
         }])
         .select()
         .single()
@@ -107,11 +99,8 @@ class EmployeeService {
           name: employeeData.name,
           email: employeeData.email,
           role: employeeData.role,
-          phone: employeeData.phone,
-          document: employeeData.document,
-          hire_date: employeeData.hire_date,
-          salary: employeeData.salary,
-          status: employeeData.status,
+          cpf: employeeData.cpf,
+          active: employeeData.active,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
@@ -136,7 +125,7 @@ class EmployeeService {
       const { data, error } = await supabase
         .from('users')
         .update({
-          status: 'inactive',
+          active: false,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
@@ -160,15 +149,15 @@ class EmployeeService {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('role, status')
+        .select('role, active')
         .neq('role', 'customer')
 
       if (error) throw error
 
       const stats = {
         total: data.length,
-        active: data.filter(emp => emp.status === 'active').length,
-        inactive: data.filter(emp => emp.status === 'inactive').length,
+        active: data.filter(emp => emp.active === true).length,
+        inactive: data.filter(emp => emp.active === false).length,
         byRole: {
           admin: data.filter(emp => emp.role === 'admin').length,
           staff: data.filter(emp => emp.role === 'staff').length,
@@ -194,12 +183,12 @@ class EmployeeService {
           id,
           name,
           email,
-          phone,
-          status,
-          hire_date
+          cpf,
+          active,
+          created_at
         `)
         .eq('role', role)
-        .eq('status', 'active')
+        .eq('active', true)
         .order('name')
 
       if (error) throw error

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { StoreService } from '../../services/storeService'
 import { ImageUploadService } from '../../services/imageUploadService'
+import { RecipeService } from '../../services/recipeService'
 import { useStore } from '../../contexts/StoreContext'
 import anime from 'animejs'
 
@@ -10,6 +11,7 @@ export default function ProductForm({ product = null, onSave, onCancel }) {
   const [error, setError] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [imageFile, setImageFile] = useState(null)
+  const [recipes, setRecipes] = useState([])
   
   // Form state
   const [formData, setFormData] = useState({
@@ -17,12 +19,24 @@ export default function ProductForm({ product = null, onSave, onCancel }) {
     description: '',
     price: '',
     category_id: '',
+    recipe_id: '', // Novo campo para associar receita
     ingredients: '',
     prep_time: 15, // Default 15 minutes
     show_in_menu: true,
     available: true,
     image_path: '',
   })
+
+  // Load recipes on component mount
+  useEffect(() => {
+    const loadRecipes = async () => {
+      const result = await RecipeService.getRecipes();
+      if (result.success) {
+        setRecipes(result.data);
+      }
+    };
+    loadRecipes();
+  }, []);
 
   // Initialize form with product data if editing
   useEffect(() => {
@@ -32,6 +46,7 @@ export default function ProductForm({ product = null, onSave, onCancel }) {
         description: product.description || '',
         price: product.price || '',
         category_id: product.category_id || '',
+        recipe_id: product.recipe_id || '',
         ingredients: product.ingredients || '',
         prep_time: product.prep_time || 15,
         show_in_menu: product.show_in_menu !== false, // Default to true if undefined
@@ -201,6 +216,27 @@ export default function ProductForm({ product = null, onSave, onCancel }) {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Receita Associada */}
+          <div className="form-field">
+            <label className="block text-gold/80 mb-1">Receita Associada</label>
+            <select
+              name="recipe_id"
+              value={formData.recipe_id}
+              onChange={handleChange}
+              className="w-full bg-black/40 border border-gold/30 rounded-lg p-2 text-white focus:border-gold focus:outline-none"
+            >
+              <option value="">Nenhuma receita associada</option>
+              {recipes?.map(recipe => (
+                <option key={recipe.id} value={recipe.id}>
+                  {recipe.name} ({recipe.serving_size} porções)
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gold/60 mt-1">
+              Associe uma receita para controle automático de estoque
+            </p>
           </div>
 
           {/* Tempo de preparo */}

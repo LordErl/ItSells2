@@ -19,11 +19,9 @@ const EmployeeManagement = () => {
     name: '',
     email: '',
     role: 'staff',
-    phone: '',
-    document: '',
-    hire_date: new Date().toISOString().split('T')[0],
-    salary: '',
-    status: 'active'
+    cpf: '',
+    password: '',
+    active: true
   })
 
   useEffect(() => {
@@ -86,11 +84,9 @@ const EmployeeManagement = () => {
       name: employee.name || '',
       email: employee.email || '',
       role: employee.role || 'staff',
-      phone: employee.phone || '',
-      document: employee.document || '',
-      hire_date: employee.hire_date || new Date().toISOString().split('T')[0],
-      salary: employee.salary || '',
-      status: employee.status || 'active'
+      cpf: employee.cpf || '',
+      password: '',
+      active: employee.active !== undefined ? employee.active : true
     })
     setShowModal(true)
   }
@@ -116,11 +112,9 @@ const EmployeeManagement = () => {
       name: '',
       email: '',
       role: 'staff',
-      phone: '',
-      document: '',
-      hire_date: new Date().toISOString().split('T')[0],
-      salary: '',
-      status: 'active'
+      cpf: '',
+      password: '',
+      active: true
     })
     setEditingEmployee(null)
   }
@@ -134,8 +128,8 @@ const EmployeeManagement = () => {
     return labels[role] || role
   }
 
-  const getStatusColor = (status) => {
-    return status === 'active' ? 'text-green-400' : 'text-red-400'
+  const getStatusColor = (active) => {
+    return active ? 'text-green-400' : 'text-red-400'
   }
 
   if (loading) {
@@ -236,9 +230,9 @@ const EmployeeManagement = () => {
                     <th className="text-left py-3 px-4 text-gold">Nome</th>
                     <th className="text-left py-3 px-4 text-gold">Email</th>
                     <th className="text-left py-3 px-4 text-gold">Cargo</th>
-                    <th className="text-left py-3 px-4 text-gold">Telefone</th>
+                    <th className="text-left py-3 px-4 text-gold">CPF</th>
                     <th className="text-left py-3 px-4 text-gold">Status</th>
-                    <th className="text-left py-3 px-4 text-gold">Contratação</th>
+                    <th className="text-left py-3 px-4 text-gold">Criado em</th>
                     <th className="text-left py-3 px-4 text-gold">Ações</th>
                   </tr>
                 </thead>
@@ -259,14 +253,14 @@ const EmployeeManagement = () => {
                           {getRoleLabel(employee.role)}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-gray-300">{employee.phone || '-'}</td>
+                      <td className="py-3 px-4 text-gray-300">{employee.cpf || '-'}</td>
                       <td className="py-3 px-4">
-                        <span className={`font-medium ${getStatusColor(employee.status)}`}>
-                          {employee.status === 'active' ? 'Ativo' : 'Inativo'}
+                        <span className={`font-medium ${getStatusColor(employee.active)}`}>
+                          {employee.active ? 'Ativo' : 'Inativo'}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-gray-300">
-                        {employee.hire_date ? new Date(employee.hire_date).toLocaleDateString('pt-BR') : '-'}
+                        {employee.created_at ? new Date(employee.created_at).toLocaleDateString('pt-BR') : '-'}
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex space-x-2">
@@ -276,7 +270,7 @@ const EmployeeManagement = () => {
                           >
                             ✏️ Editar
                           </button>
-                          {employee.status === 'active' && (
+                          {employee.active && (
                             <button
                               onClick={() => handleDelete(employee)}
                               className="px-3 py-1 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30 transition-colors text-sm"
@@ -358,63 +352,40 @@ const EmployeeManagement = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Telefone
-                </label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  className="input-luxury w-full"
-                  placeholder="(11) 99999-9999"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
                   CPF
                 </label>
                 <input
                   type="text"
-                  value={formData.document}
-                  onChange={(e) => setFormData({...formData, document: e.target.value})}
+                  value={formData.cpf}
+                  onChange={(e) => setFormData({...formData, cpf: e.target.value})}
                   className="input-luxury w-full"
                   placeholder="000.000.000-00"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Data de Contratação
-                </label>
-                <input
-                  type="date"
-                  value={formData.hire_date}
-                  onChange={(e) => setFormData({...formData, hire_date: e.target.value})}
-                  className="input-luxury w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Salário
-                </label>
-                <input
-                  type="number"
-                  value={formData.salary}
-                  onChange={(e) => setFormData({...formData, salary: e.target.value})}
-                  className="input-luxury w-full"
-                  placeholder="0.00"
-                  step="0.01"
-                />
-              </div>
+              {!editingEmployee && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Senha Temporária *
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                    className="input-luxury w-full"
+                    placeholder="Digite uma senha temporária"
+                    required={!editingEmployee}
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
                   Status
                 </label>
                 <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({...formData, status: e.target.value})}
+                  value={formData.active ? 'active' : 'inactive'}
+                  onChange={(e) => setFormData({...formData, active: e.target.value === 'active'})}
                   className="input-luxury w-full"
                 >
                   <option value="active">Ativo</option>

@@ -30,6 +30,29 @@ const RecipeManagement = () => {
   const [selectedDifficulty, setSelectedDifficulty] = useState('');
   const [activeTab, setActiveTab] = useState('recipes');
   const [showRecipeDetails, setShowRecipeDetails] = useState(false);
+  const [showCreateRecipe, setShowCreateRecipe] = useState(false);
+  const [showEditRecipe, setShowEditRecipe] = useState(false);
+  const [editingRecipe, setEditingRecipe] = useState(null);
+  
+  // Estados para criação de receita
+  const [newRecipe, setNewRecipe] = useState({
+    name: '',
+    description: '',
+    difficulty_level: 'medium',
+    serving_size: 1,
+    preparation_time_minutes: 30,
+    preparation_instructions: '',
+    ingredients: []
+  });
+  
+  const [selectedIngredients, setSelectedIngredients] = useState([]);
+  const [currentIngredient, setCurrentIngredient] = useState({
+    ingredient_id: '',
+    quantity: '',
+    unit_measure: '',
+    is_optional: false,
+    notes: ''
+  });
 
   useEffect(() => {
     loadInitialData();
@@ -95,6 +118,168 @@ const RecipeManagement = () => {
     }
   };
 
+  // Funções para criação de receita
+  const handleCreateRecipe = async () => {
+    if (!newRecipe.name.trim()) {
+      setError('Nome da receita é obrigatório');
+      return;
+    }
+    
+    if (selectedIngredients.length === 0) {
+      setError('Adicione pelo menos um ingrediente à receita');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const recipeData = {
+        ...newRecipe,
+        ingredients: selectedIngredients
+      };
+      
+      const result = await RecipeService.createRecipe(recipeData);
+      
+      if (result.success) {
+        setSuccess('Receita criada com sucesso!');
+        setShowCreateRecipe(false);
+        resetRecipeForm();
+        await loadRecipes();
+      } else {
+        setError(result.error);
+      }
+    } catch (error) {
+      setError('Erro ao criar receita');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetRecipeForm = () => {
+    setNewRecipe({
+      name: '',
+      description: '',
+      difficulty_level: 'medium',
+      serving_size: 1,
+      preparation_time_minutes: 30,
+      preparation_instructions: '',
+      ingredients: []
+    });
+    setSelectedIngredients([]);
+    setCurrentIngredient({
+      ingredient_id: '',
+      quantity: '',
+      unit_measure: '',
+      is_optional: false,
+      notes: ''
+    });
+  };
+
+  const handleAddIngredient = () => {
+    if (!currentIngredient.ingredient_id || !currentIngredient.quantity) {
+      setError('Selecione um ingrediente e informe a quantidade');
+      return;
+    }
+
+    const ingredient = ingredients.find(ing => ing.id === currentIngredient.ingredient_id);
+    if (!ingredient) return;
+
+    const newIngredient = {
+      ...currentIngredient,
+      ingredient_name: ingredient.name,
+      unit_measure: currentIngredient.unit_measure || ingredient.unit_measure,
+      cost_per_unit: ingredient.cost_per_unit
+    };
+
+    setSelectedIngredients([...selectedIngredients, newIngredient]);
+    setCurrentIngredient({
+      ingredient_id: '',
+      quantity: '',
+      unit_measure: '',
+      is_optional: false,
+      notes: ''
+    });
+    setError('');
+  };
+
+  const handleRemoveIngredient = (index) => {
+    setSelectedIngredients(selectedIngredients.filter((_, i) => i !== index));
+  };
+
+  const calculateTotalCost = () => {
+    return selectedIngredients.reduce((total, ing) => {
+      return total + (parseFloat(ing.quantity) * parseFloat(ing.cost_per_unit));
+    }, 0);
+  };
+
+  // Funções para edição de receita
+  const handleEditRecipe = (recipe) => {
+    setEditingRecipe(recipe);
+    setNewRecipe({
+      name: recipe.name,
+      description: recipe.description || '',
+      difficulty_level: recipe.difficulty_level,
+      serving_size: recipe.serving_size,
+      preparation_time_minutes: recipe.preparation_time_minutes,
+      preparation_instructions: recipe.preparation_instructions || ''
+    });
+    
+    // Carregar ingredientes da receita
+    const recipeIngredients = recipe.recipe_ingredients?.map(ri => ({
+      ingredient_id: ri.ingredients.id,
+      ingredient_name: ri.ingredients.name,
+      quantity: ri.quantity,
+      unit_measure: ri.unit_measure,
+      cost_per_unit: ri.ingredients.cost_per_unit,
+      is_optional: ri.is_optional,
+      notes: ri.notes || ''
+    })) || [];
+    
+    setSelectedIngredients(recipeIngredients);
+    setShowEditRecipe(true);
+  };
+
+  const handleUpdateRecipe = async () => {
+    if (!newRecipe.name.trim()) {
+      setError('Nome da receita é obrigatório');
+      return;
+    }
+    
+    if (selectedIngredients.length === 0) {
+      setError('Adicione pelo menos um ingrediente à receita');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const recipeData = {
+        ...newRecipe,
+        ingredients: selectedIngredients
+      };
+      
+      const result = await RecipeService.updateRecipe(editingRecipe.id, recipeData);
+      
+      if (result.success) {
+        setSuccess('Receita atualizada com sucesso!');
+        setShowEditRecipe(false);
+        setEditingRecipe(null);
+        resetRecipeForm();
+        await loadRecipes();
+      } else {
+        setError(result.error);
+      }
+    } catch (error) {
+      setError('Erro ao atualizar receita');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditRecipe(false);
+    setEditingRecipe(null);
+    resetRecipeForm();
+  };
+
   const getDifficultyBadge = (difficulty) => {
     const config = {
       'easy': { color: 'bg-green-100 text-green-800', label: 'Fácil' },
@@ -137,7 +322,7 @@ const RecipeManagement = () => {
           <h1 className="text-3xl font-bold">Gestão de Receitas</h1>
           <p className="text-gray-600">Controle completo de receitas e custos</p>
         </div>
-        <Button>
+        <Button onClick={() => setShowCreateRecipe(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Nova Receita
         </Button>
@@ -299,13 +484,23 @@ const RecipeManagement = () => {
                             size="sm" 
                             variant="outline"
                             onClick={() => handleViewRecipe(recipe)}
+                            title="Ver detalhes"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button 
                             size="sm" 
                             variant="outline"
+                            onClick={() => handleEditRecipe(recipe)}
+                            title="Editar receita"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
                             onClick={() => handleCheckAvailability(recipe.id, 1)}
+                            title="Verificar disponibilidade"
                           >
                             <CheckCircle className="h-4 w-4" />
                           </Button>
@@ -313,6 +508,7 @@ const RecipeManagement = () => {
                             size="sm" 
                             variant="outline"
                             onClick={() => handleDuplicateRecipe(recipe.id)}
+                            title="Duplicar receita"
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
@@ -427,6 +623,512 @@ const RecipeManagement = () => {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Modal: Nova Receita */}
+      {showCreateRecipe && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-bold">Nova Receita</h3>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowCreateRecipe(false);
+                  resetRecipeForm();
+                }}
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Informações da Receita */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-medium">Informações Básicas</h4>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Nome da Receita *</label>
+                  <Input
+                    value={newRecipe.name}
+                    onChange={(e) => setNewRecipe({...newRecipe, name: e.target.value})}
+                    placeholder="Ex: Hambúrguer Gourmet"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Descrição</label>
+                  <textarea
+                    className="w-full p-2 border rounded-md h-20 resize-none"
+                    value={newRecipe.description}
+                    onChange={(e) => setNewRecipe({...newRecipe, description: e.target.value})}
+                    placeholder="Descrição da receita..."
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Dificuldade</label>
+                    <select
+                      className="w-full p-2 border rounded-md"
+                      value={newRecipe.difficulty_level}
+                      onChange={(e) => setNewRecipe({...newRecipe, difficulty_level: e.target.value})}
+                    >
+                      <option value="easy">Fácil</option>
+                      <option value="medium">Médio</option>
+                      <option value="hard">Difícil</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Porções</label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={newRecipe.serving_size}
+                      onChange={(e) => setNewRecipe({...newRecipe, serving_size: parseInt(e.target.value) || 1})}
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Tempo de Preparo (minutos)</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={newRecipe.preparation_time_minutes}
+                    onChange={(e) => setNewRecipe({...newRecipe, preparation_time_minutes: parseInt(e.target.value) || 30})}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Instruções de Preparo</label>
+                  <textarea
+                    className="w-full p-2 border rounded-md h-32 resize-none"
+                    value={newRecipe.preparation_instructions}
+                    onChange={(e) => setNewRecipe({...newRecipe, preparation_instructions: e.target.value})}
+                    placeholder="1. Primeiro passo...\n2. Segundo passo...\n3. Terceiro passo..."
+                  />
+                </div>
+              </div>
+              
+              {/* Ingredientes */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-medium">Ingredientes</h4>
+                
+                {/* Adicionar Ingrediente */}
+                <div className="p-4 border rounded-lg bg-gray-50">
+                  <h5 className="font-medium mb-3">Adicionar Ingrediente</h5>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Ingrediente *</label>
+                      <select
+                        className="w-full p-2 border rounded-md"
+                        value={currentIngredient.ingredient_id}
+                        onChange={(e) => {
+                          const ingredient = ingredients.find(ing => ing.id === e.target.value);
+                          setCurrentIngredient({
+                            ...currentIngredient,
+                            ingredient_id: e.target.value,
+                            unit_measure: ingredient?.unit_measure || ''
+                          });
+                        }}
+                      >
+                        <option value="">Selecione um ingrediente</option>
+                        {ingredients.map(ingredient => (
+                          <option key={ingredient.id} value={ingredient.id}>
+                            {ingredient.name} ({ingredient.unit_measure})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Quantidade *</label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={currentIngredient.quantity}
+                          onChange={(e) => setCurrentIngredient({...currentIngredient, quantity: e.target.value})}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Unidade</label>
+                        <Input
+                          value={currentIngredient.unit_measure}
+                          onChange={(e) => setCurrentIngredient({...currentIngredient, unit_measure: e.target.value})}
+                          placeholder="kg, g, ml, un..."
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Observações</label>
+                      <Input
+                        value={currentIngredient.notes}
+                        onChange={(e) => setCurrentIngredient({...currentIngredient, notes: e.target.value})}
+                        placeholder="Ex: bem picado, sem sementes..."
+                      />
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="optional"
+                        checked={currentIngredient.is_optional}
+                        onChange={(e) => setCurrentIngredient({...currentIngredient, is_optional: e.target.checked})}
+                      />
+                      <label htmlFor="optional" className="text-sm">Ingrediente opcional</label>
+                    </div>
+                    
+                    <Button 
+                      onClick={handleAddIngredient}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar Ingrediente
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Lista de Ingredientes Adicionados */}
+                <div>
+                  <h5 className="font-medium mb-3">Ingredientes da Receita ({selectedIngredients.length})</h5>
+                  
+                  {selectedIngredients.length > 0 ? (
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {selectedIngredients.map((ingredient, index) => (
+                        <div key={index} className="flex justify-between items-center p-3 bg-white border rounded-lg">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{ingredient.ingredient_name}</span>
+                              {ingredient.is_optional && (
+                                <Badge variant="outline" className="text-xs">Opcional</Badge>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {ingredient.quantity} {ingredient.unit_measure}
+                              {ingredient.notes && ` • ${ingredient.notes}`}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Custo: {formatCurrency(parseFloat(ingredient.quantity) * parseFloat(ingredient.cost_per_unit))}
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRemoveIngredient(index)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-500 py-4 border rounded-lg bg-gray-50">
+                      Nenhum ingrediente adicionado
+                    </p>
+                  )}
+                  
+                  {selectedIngredients.length > 0 && (
+                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">Custo Total Estimado:</span>
+                        <span className="text-lg font-bold text-blue-600">
+                          {formatCurrency(calculateTotalCost())}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        Custo por porção: {formatCurrency(calculateTotalCost() / newRecipe.serving_size)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Botões de Ação */}
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowCreateRecipe(false);
+                  resetRecipeForm();
+                }}
+                disabled={loading}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCreateRecipe}
+                disabled={loading || !newRecipe.name.trim() || selectedIngredients.length === 0}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {loading ? 'Criando...' : 'Criar Receita'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Editar Receita */}
+      {showEditRecipe && editingRecipe && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[90vh] overflow-y-auto w-full mx-4">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Editar Receita: {editingRecipe.name}</h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancelEdit}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <XCircle className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Informações Básicas */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Informações da Receita</h3>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome da Receita *</label>
+                  <input
+                    type="text"
+                    value={newRecipe.name}
+                    onChange={(e) => setNewRecipe({...newRecipe, name: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Ex: Hambúrguer Gourmet"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                  <textarea
+                    value={newRecipe.description}
+                    onChange={(e) => setNewRecipe({...newRecipe, description: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows="3"
+                    placeholder="Descrição da receita..."
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Dificuldade</label>
+                    <select
+                      value={newRecipe.difficulty_level}
+                      onChange={(e) => setNewRecipe({...newRecipe, difficulty_level: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="easy">Fácil</option>
+                      <option value="medium">Médio</option>
+                      <option value="hard">Difícil</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Porções</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={newRecipe.serving_size}
+                      onChange={(e) => setNewRecipe({...newRecipe, serving_size: parseInt(e.target.value) || 1})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tempo de Preparo (minutos)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={newRecipe.preparation_time_minutes}
+                    onChange={(e) => setNewRecipe({...newRecipe, preparation_time_minutes: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Instruções de Preparo</label>
+                  <textarea
+                    value={newRecipe.preparation_instructions}
+                    onChange={(e) => setNewRecipe({...newRecipe, preparation_instructions: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows="4"
+                    placeholder="Passo a passo do preparo..."
+                  />
+                </div>
+              </div>
+              
+              {/* Ingredientes */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Ingredientes</h3>
+                
+                {/* Adicionar Ingrediente */}
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-medium mb-3">Adicionar Ingrediente</h4>
+                  
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Ingrediente</label>
+                      <select
+                        value={currentIngredient.ingredient_id}
+                        onChange={(e) => {
+                          const ingredient = ingredients.find(ing => ing.id === e.target.value);
+                          setCurrentIngredient({
+                            ...currentIngredient,
+                            ingredient_id: e.target.value,
+                            ingredient_name: ingredient?.name || '',
+                            unit_measure: ingredient?.unit_measure || '',
+                            cost_per_unit: ingredient?.cost_per_unit || 0
+                          });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Selecione um ingrediente</option>
+                        {ingredients.map(ingredient => (
+                          <option key={ingredient.id} value={ingredient.id}>
+                            {ingredient.name} ({ingredient.unit_measure})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={currentIngredient.quantity}
+                        onChange={(e) => setCurrentIngredient({...currentIngredient, quantity: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+                      <input
+                        type="text"
+                        value={currentIngredient.notes}
+                        onChange={(e) => setCurrentIngredient({...currentIngredient, notes: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: bem picado, sem casca..."
+                      />
+                    </div>
+                    
+                    <div className="flex items-center pt-6">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={currentIngredient.is_optional}
+                          onChange={(e) => setCurrentIngredient({...currentIngredient, is_optional: e.target.checked})}
+                          className="mr-2"
+                        />
+                        <span className="text-sm text-gray-700">Ingrediente opcional</span>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <Button
+                    onClick={handleAddIngredient}
+                    disabled={!currentIngredient.ingredient_id || !currentIngredient.quantity}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Ingrediente
+                  </Button>
+                </div>
+                
+                {/* Lista de Ingredientes Adicionados */}
+                <div>
+                  <h5 className="font-medium mb-3">Ingredientes da Receita ({selectedIngredients.length})</h5>
+                  
+                  {selectedIngredients.length > 0 ? (
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {selectedIngredients.map((ingredient, index) => (
+                        <div key={index} className="flex justify-between items-center p-3 bg-white border rounded-lg">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{ingredient.ingredient_name}</span>
+                              {ingredient.is_optional && (
+                                <Badge variant="outline" className="text-xs">Opcional</Badge>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {ingredient.quantity} {ingredient.unit_measure}
+                              {ingredient.notes && ` • ${ingredient.notes}`}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Custo: {formatCurrency(parseFloat(ingredient.quantity) * parseFloat(ingredient.cost_per_unit))}
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRemoveIngredient(index)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-500 py-4 border rounded-lg bg-gray-50">
+                      Nenhum ingrediente adicionado
+                    </p>
+                  )}
+                  
+                  {selectedIngredients.length > 0 && (
+                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">Custo Total Estimado:</span>
+                        <span className="text-lg font-bold text-blue-600">
+                          {formatCurrency(calculateTotalCost())}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        Custo por porção: {formatCurrency(calculateTotalCost() / newRecipe.serving_size)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Botões de Ação */}
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={handleCancelEdit}
+                disabled={loading}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleUpdateRecipe}
+                disabled={loading || !newRecipe.name.trim() || selectedIngredients.length === 0}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {loading ? 'Atualizando...' : 'Atualizar Receita'}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

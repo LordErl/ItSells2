@@ -1,4 +1,5 @@
 import { supabase, TABLES, ORDER_STATUS, PAYMENT_STATUS, ORDER_ITEM_STATUS, handleError, formatDate, parseDate, getTables } from '../lib'
+import { StockDeductionService } from './stockDeductionService'
 
 export class CashierService {
   
@@ -346,6 +347,59 @@ export class CashierService {
    */
   static async closeTable(tableId, paymentId) {
     try {
+      console.log('🏁 Fechando mesa:', tableId, 'Pagamento:', paymentId);
+
+      // Buscar pedidos da mesa para processamento de estoque
+      const { data: orders, error: fetchError } = await supabase
+        .from(TABLES.ORDERS)
+        .select(`
+          *,
+          order_items(
+            *,
+            products(
+              id,
+              name
+            )
+          )
+        `)
+        .eq('table_id', tableId)
+        .in('status', [ORDER_STATUS.CONFIRMED, ORDER_STATUS.PREPARING, ORDER_STATUS.READY])
+
+      if (fetchError) {
+        console.error('❌ Erro ao buscar pedidos da mesa:', fetchError);
+        throw fetchError;
+      }
+
+      // Processar baixa automática de estoque para cada pedido
+      const stockDeductionResults = [];
+      
+      for (const order of orders) {
+        if (order.order_items && order.order_items.length > 0) {
+          console.log('📦 Processando baixa de estoque para pedido:', order.id);
+          
+          const orderData = {
+            id: order.id,
+            user_id: order.customer_id || order.user_id,
+            items: order.order_items.map(item => ({
+              product_id: item.product_id,
+              quantity: item.quantity
+            }))
+          };
+
+          const stockResult = await StockDeductionService.processOrderStockDeduction(orderData);
+          stockDeductionResults.push({
+            order_id: order.id,
+            stock_result: stockResult
+          });
+
+          if (!stockResult.success) {
+            console.warn('⚠️ Baixa de estoque falhou para pedido:', order.id, stockResult.error);
+          } else {
+            console.log('✅ Baixa de estoque processada para pedido:', order.id);
+          }
+        }
+      }
+
       // Update all orders for this table to delivered
       const { error: ordersError } = await supabase
         .from(TABLES.ORDERS)
@@ -380,8 +434,14 @@ export class CashierService {
 
       if (paymentError) throw paymentError
 
-      return { success: true }
+      console.log('✅ Mesa fechada com sucesso. Baixas de estoque processadas:', stockDeductionResults.length);
+
+      return { 
+        success: true,
+        stock_deductions: stockDeductionResults
+      }
     } catch (error) {
+      console.error('❌ Erro ao fechar mesa:', error);
       return {
         success: false,
         error: handleError(error)
