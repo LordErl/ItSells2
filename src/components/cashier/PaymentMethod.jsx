@@ -1,8 +1,8 @@
 import React from 'react'
 import { PAYMENT_METHODS } from '../../lib/constants'
 
-const PaymentMethod = ({ onMethodSelect, selectedMethod, totals, disabled }) => {
-  const paymentMethods = [
+const PaymentMethod = ({ onMethodSelect, selectedMethod, totals, disabled, payerType = 'CASHIER' }) => {
+  const allPaymentMethods = [
     {
       id: PAYMENT_METHODS.PIX,
       name: 'PIX',
@@ -28,6 +28,10 @@ const PaymentMethod = ({ onMethodSelect, selectedMethod, totals, disabled }) => 
       features: ['Sem taxas', 'Imediato', 'Troco disponível']
     }
   ]
+
+  const paymentMethods = payerType === 'CUSTOMER'
+    ? allPaymentMethods.filter((method) => method.id !== PAYMENT_METHODS.CASH)
+    : allPaymentMethods
 
   if (!totals) {
     return (

@@ -211,6 +211,7 @@ export default function CustomerCheckout() {
                   selectedMethod={selectedPaymentMethod}
                   totals={totals}
                   disabled={!canProceedToPayment}
+                  payerType='CUSTOMER'
                 />
 
                 {canProceedToPayment && (
@@ -233,6 +234,7 @@ export default function CustomerCheckout() {
                 selectedMethod={selectedPaymentMethod}
                 totals={totals}
                 disabled={false}
+                payerType='CUSTOMER'
               />
             )}
 
@@ -253,55 +255,6 @@ export default function CustomerCheckout() {
                 onPaymentSuccess={handlePaymentSuccess}
                 onCancel={handleCancel}
               />
-            )}
-
-            {currentStep === 'processing' && selectedPaymentMethod === PAYMENT_METHODS.CASH && (
-              <div className="glass-card p-6">
-                <h3 className="text-xl font-bold text-gold mb-6">Pagamento em Dinheiro</h3>
-                
-                <div className="bg-gold/10 rounded-lg p-4 mb-6">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gold/70">Cliente:</span>
-                    <span className="text-gold font-medium">{selectedBill.name}</span>
-                  </div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gold/70">Local:</span>
-                    <span className="text-gold font-medium">
-                      {selectedBill.table_number === 0 ? 'Balcão' : `Mesa ${selectedBill.table_number}`}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gold/70">Total a pagar:</span>
-                    <span className="text-gold font-bold text-lg">
-                      R$ {totals?.total?.toFixed(2) || '0,00'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="text-center mb-6">
-                  <div className="text-6xl mb-4">💵</div>
-                  <p className="text-gold/70">Confirme o pagamento em dinheiro</p>
-                </div>
-
-                <div className="flex space-x-3">
-                  <button
-                    onClick={handleCancel}
-                    className="flex-1 px-4 py-2 bg-gray-500/20 text-gray-400 rounded-lg hover:bg-gray-500/30 transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={() => handlePaymentSuccess({
-                      reference: `CASH_${Date.now()}`,
-                      method: 'cash',
-                      amount: totals.total
-                    })}
-                    className="flex-1 btn-luxury"
-                  >
-                    Confirmar Pagamento
-                  </button>
-                </div>
-              </div>
             )}
           </div>
         </div>
