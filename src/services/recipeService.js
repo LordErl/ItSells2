@@ -182,8 +182,8 @@ export class RecipeService {
           version: recipeData.version || '1.0',
           preparation_instructions: recipeData.preparation_instructions,
           difficulty_level: recipeData.difficulty_level || 'medium',
-          serving_size: recipeData.serving_size || 1,
-          preparation_time_minutes: recipeData.preparation_time_minutes,
+          serving_size: Math.round(Number(recipeData.serving_size) || 1),
+          preparation_time_minutes: Math.round(Number(recipeData.preparation_time_minutes) || 30),
           created_by: recipeData.created_by,
           is_active: true
         }])
