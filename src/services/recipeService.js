@@ -179,7 +179,7 @@ export class RecipeService {
           product_id: recipeData.product_id,
           name: recipeData.name,
           description: recipeData.description,
-          version: recipeData.version || '1.0',
+          version: recipeData.version || '1',
           preparation_instructions: recipeData.preparation_instructions,
           difficulty_level: recipeData.difficulty_level || 'medium',
           serving_size: Math.round(Number(recipeData.serving_size) || 1),
