@@ -133,9 +133,11 @@ const RecipeManagement = () => {
     setError('');
     setSuccess('');
 
+    // Garantir que os valores numéricos sejam inteiros
     const recipeData = {
       ...newRecipe,
-      preparation_time_minutes: parseInt(newRecipe.preparation_time_minutes, 10),
+      serving_size: Math.round(Number(newRecipe.serving_size) || 1),
+      preparation_time_minutes: Math.round(Number(newRecipe.preparation_time_minutes) || 30),
       ingredients: selectedIngredients
     };
     
@@ -251,9 +253,11 @@ const RecipeManagement = () => {
     setError('');
     setSuccess('');
 
+    // Garantir que os valores numéricos sejam inteiros
     const recipeData = {
       ...newRecipe,
-      preparation_time_minutes: parseInt(newRecipe.preparation_time_minutes, 10),
+      serving_size: Math.round(Number(newRecipe.serving_size) || 1),
+      preparation_time_minutes: Math.round(Number(newRecipe.preparation_time_minutes) || 30),
       ingredients: selectedIngredients
     };
     
