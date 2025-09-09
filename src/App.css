@@ -1,12 +1,13 @@
 @import "tailwindcss";
+@import "./styles/premium-theme.css";
 
-/* Custom Properties */
+/* Custom Properties - Legacy Support */
 :root {
-  --gold: #FFD700;
-  --neon-cyan: #00FFFF;
-  --neon-pink: #FF1493;
-  --neon-green: #00FF00;
-  --dark-bg: #0a0a0a;
+  --gold: var(--gold-400);
+  --neon-cyan: var(--neon-cyan);
+  --neon-pink: var(--neon-pink);
+  --neon-green: var(--neon-green);
+  --dark-bg: var(--gray-950);
 }
 
 /* Base Styles */
