@@ -217,20 +217,17 @@ export default function AdminDashboard() {
             {/* Pedidos Ativos */}
             {cardPermissions.activeOrders && (
               <div 
-                className="metric-card cursor-pointer hover:scale-105 transition-transform"
+                className="card-premium cursor-pointer hover:scale-105 transition-transform"
                 onClick={() => handleCardClick('orders')}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-6">
                   <div>
-                    <p className="text-gold/80 text-sm">Pedidos Ativos</p>
-                    <p className="text-2xl font-bold text-neon-cyan">{realTimeStats.activeOrders}</p>
-                    <p className="text-xs text-neon-cyan/60">Clique para visualizar</p>
+                    <p className="text-gold/80 text-sm font-medium">Pedidos Ativos</p>
+                    <p className="text-3xl font-bold text-neon-cyan mt-1">{realTimeStats.activeOrders}</p>
+                    <p className="text-xs text-neon-cyan/60 mt-1">Clique para visualizar</p>
                   </div>
-                  <div className="w-12 h-12 bg-neon-cyan/20 rounded-full flex items-center justify-center">
-                    <svg className="w-6 h-6 text-neon-cyan" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                      <path fillRule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 102 0V3h4v1a1 1 0 102 0V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
-                    </svg>
+                  <div className="w-14 h-14 bg-neon-cyan/20 rounded-full flex items-center justify-center">
+                    <AppIcon type="active-orders" size="xl" color="var(--neon-cyan)" />
                   </div>
                 </div>
               </div>
