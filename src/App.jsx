@@ -435,36 +435,39 @@ function NotFoundPage() {
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <StoreProvider>
-          <AppContent />
-          <Toaster 
-            position="top-center"
-            toastOptions={{
-              duration: 3000,
-              style: {
-                background: 'rgba(0, 0, 0, 0.8)',
-                color: '#FFD700',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 215, 0, 0.3)',
-                borderRadius: '8px',
-              },
-              success: {
-                iconTheme: {
-                  primary: '#FFD700',
-                  secondary: 'black',
+      <ThemeProvider>
+        <AuthProvider>
+          <StoreProvider>
+            <AppContent />
+            <Toaster 
+              position="top-center"
+              toastOptions={{
+                duration: 3000,
+                style: {
+                  background: 'rgba(0, 0, 0, 0.9)',
+                  color: '#FFD700',
+                  backdropFilter: 'blur(15px)',
+                  border: '1px solid rgba(255, 215, 0, 0.3)',
+                  borderRadius: '12px',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
                 },
-              },
-              error: {
-                iconTheme: {
-                  primary: '#ff4b4b',
-                  secondary: 'black',
+                success: {
+                  iconTheme: {
+                    primary: '#FFD700',
+                    secondary: 'black',
+                  },
                 },
-              },
-            }}
-          />
-        </StoreProvider>
-      </AuthProvider>
+                error: {
+                  iconTheme: {
+                    primary: '#ff4b4b',
+                    secondary: 'black',
+                  },
+                },
+              }}
+            />
+          </StoreProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </Router>
   )
 }
