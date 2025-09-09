@@ -8,6 +8,8 @@ import { StoreService } from '../services/storeService'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import { AppIcon } from '../components/ui/Icon'
+import FloatingParticles from '../components/effects/FloatingParticles'
+import { MetricCard, PremiumGrid, PremiumSection, PremiumLoading } from '../components/layout/PremiumContainer'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
