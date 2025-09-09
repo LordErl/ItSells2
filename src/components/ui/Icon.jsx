@@ -69,7 +69,7 @@ import {
   Bell,
   Search,
   Filter,
-  RefreshCw as RefreshCcw
+  RefreshCw
 } from 'lucide-react';
 
 // Mapeamento de ícones para facilitar o uso

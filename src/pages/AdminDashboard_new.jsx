@@ -416,7 +416,7 @@ export default function AdminDashboard() {
               </button>
             )}
           </div>
-        </PremiumSection>
+        </div>
       </div>
     </div>
   );
