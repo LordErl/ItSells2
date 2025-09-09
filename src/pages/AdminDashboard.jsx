@@ -623,7 +623,7 @@ export default function AdminDashboard() {
                 onClick={() => navigate('/system-settings')}
                 className="px-4 py-3 bg-gray-500/20 text-gray-400 rounded-lg hover:bg-gray-500/30 transition-colors text-sm font-medium"
               >
-                ⚙️ Configurações Sistema
+                Configuracoes Sistema
               </button>
             )}
             
