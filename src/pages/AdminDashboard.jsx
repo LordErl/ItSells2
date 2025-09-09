@@ -236,19 +236,17 @@ export default function AdminDashboard() {
             {/* Mesas Ocupadas */}
             {cardPermissions.occupiedTables && (
               <div 
-                className="metric-card cursor-pointer hover:scale-105 transition-transform"
+                className="card-premium cursor-pointer hover:scale-105 transition-transform"
                 onClick={() => handleCardClick('tables')}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-6">
                   <div>
-                    <p className="text-gold/80 text-sm">Mesas Ocupadas</p>
-                    <p className="text-2xl font-bold text-neon-green">{realTimeStats.occupiedTables}</p>
-                    <p className="text-xs text-neon-green/60">Clique para visualizar</p>
+                    <p className="text-gold/80 text-sm font-medium">Mesas Ocupadas</p>
+                    <p className="text-3xl font-bold text-neon-green mt-1">{realTimeStats.occupiedTables}</p>
+                    <p className="text-xs text-neon-green/60 mt-1">Clique para visualizar</p>
                   </div>
-                  <div className="w-12 h-12 bg-neon-green/20 rounded-full flex items-center justify-center">
-                    <svg className="w-6 h-6 text-neon-green" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                    </svg>
+                  <div className="w-14 h-14 bg-neon-green/20 rounded-full flex items-center justify-center">
+                    <AppIcon type="occupied-tables" size="xl" color="var(--neon-green)" />
                   </div>
                 </div>
               </div>
@@ -257,19 +255,17 @@ export default function AdminDashboard() {
             {/* Vendas Hoje */}
             {cardPermissions.todaySales && (
               <div 
-                className="metric-card cursor-pointer hover:scale-105 transition-transform"
+                className="card-premium cursor-pointer hover:scale-105 transition-transform"
                 onClick={() => handleCardClick('sales')}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-6">
                   <div>
-                    <p className="text-gold/80 text-sm">Vendas Hoje</p>
-                    <p className="text-2xl font-bold text-neon-purple">R$ {realTimeStats.todaySales.toFixed(2)}</p>
-                    <p className="text-xs text-neon-purple/60">Clique para relatórios</p>
+                    <p className="text-gold/80 text-sm font-medium">Vendas Hoje</p>
+                    <p className="text-3xl font-bold text-neon-purple mt-1">R$ {realTimeStats.todaySales.toFixed(2)}</p>
+                    <p className="text-xs text-neon-purple/60 mt-1">Clique para relatórios</p>
                   </div>
-                  <div className="w-12 h-12 bg-neon-purple/20 rounded-full flex items-center justify-center">
-                    <svg className="w-6 h-6 text-neon-purple" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" />
-                    </svg>
+                  <div className="w-14 h-14 bg-neon-purple/20 rounded-full flex items-center justify-center">
+                    <AppIcon type="sales" size="xl" color="var(--neon-purple)" />
                   </div>
                 </div>
               </div>
