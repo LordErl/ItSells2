@@ -8,7 +8,6 @@ import { StoreService } from '../services/storeService'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import { AppIcon } from '../components/ui/Icon'
-import { AppIcon } from '../components/ui/Icon'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
