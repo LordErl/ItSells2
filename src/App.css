@@ -179,25 +179,30 @@ body {
   border-color: rgba(255, 215, 0, 0.5);
 }
 
-/* Form Inputs */
+/* Form Inputs - Enhanced Premium */
 .luxury-input {
-  background: rgba(0, 0, 0, 0.7);
-  border: 1px solid rgba(255, 215, 0, 0.6);
-  border-radius: 0.5rem;
-  padding: 0.75rem 1rem;
-  color: var(--gold);
+  background: linear-gradient(145deg, rgba(0, 0, 0, 0.8), rgba(26, 26, 26, 0.6));
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: var(--radius-md);
+  padding: 0.875rem 1rem;
+  color: var(--gold-300);
+  font-family: 'Inter', sans-serif;
   font-size: 1rem;
-  transition: all 0.3s ease;
+  font-weight: 400;
+  transition: all var(--transition-premium);
+  backdrop-filter: blur(10px);
 }
 
 .luxury-input::placeholder {
-  color: rgba(255, 215, 0, 0.6);
+  color: rgba(251, 191, 36, 0.5);
+  font-weight: 400;
 }
 
 .luxury-input:focus {
   outline: none;
-  border-color: var(--gold);
-  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+  border-color: var(--gold-400);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2);
+  background: linear-gradient(145deg, rgba(0, 0, 0, 0.9), rgba(26, 26, 26, 0.7));
 }
 
 /* Text Gradients */
