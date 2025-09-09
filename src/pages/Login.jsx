@@ -247,16 +247,17 @@ export default function LoginPage() {
       <div ref={containerRef} className="glass-card p-8 w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="mb-4">
+          <div className="mb-6">
             <Logo size="lg" animated={true} />
           </div>
-          <h1 className="text-2xl font-bold mb-2">
-            <span className="text-gold">It</span>
-            <span className="text-green-400 text-3xl">$</span>
-            <span className="text-gold">ell's</span>
+          <h1 className="text-3xl font-display font-bold mb-3 gradient-premium">
+            It<span className="text-green-400 text-4xl font-extrabold">$</span>ell's
           </h1>
-          <p className="text-gold/80 text-sm">
+          <p className="text-gold/80 text-base font-medium">
             {tableId ? `Mesa ${tableId} - Faça seu login` : 'Acesse sua conta'}
+          </p>
+          <p className="text-gold/60 text-sm mt-2 font-primary">
+            Sistema de Gestão Premium
           </p>
         </div>
 
