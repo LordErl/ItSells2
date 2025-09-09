@@ -163,114 +163,144 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen animated-bg">
+    <div className="min-h-screen animated-bg relative">
+      {/* Partículas flutuantes */}
+      <FloatingParticles count={15} />
+      
       {/* Header */}
-      <header className="glass-panel p-4 mb-6">
+      <header className="glass-advanced p-6 mb-8 mx-6 mt-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gold-gradient">
+            <h1 className="text-3xl font-display font-bold gradient-text-animated mb-2">
               Dashboard Administrativo
             </h1>
-            <p className="text-gold/80 text-sm">
+            <p className="text-gold/80 text-base font-medium">
               Bem-vindo, {user?.name}
             </p>
           </div>
           <button
             onClick={logout}
-            className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+            className="px-6 py-3 bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500/30 transition-all duration-300 font-medium border border-red-500/30 hover:border-red-500/50"
           >
             Sair
           </button>
         </div>
       </header>
 
-      <div className="container mx-auto px-4" ref={dashboardRef}>
+      <div className="container mx-auto px-6" ref={dashboardRef}>
         {/* Stats Cards */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="metric-card animate-pulse">
-                <div className="h-20 bg-gray-700/50 rounded"></div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {/* Produtos */}
-            {cardPermissions.totalProducts && (
-              <div 
-                className="card-premium cursor-pointer hover:scale-105 transition-transform"
-                onClick={() => handleCardClick('products')}
-              >
-                <div className="flex items-center justify-between p-6">
-                  <div>
-                    <p className="text-gold/80 text-sm font-medium">Produtos</p>
-                    <p className="text-3xl font-bold text-gold mt-1">{realTimeStats.totalProducts}</p>
-                    <p className="text-xs text-gold/60 mt-1">Clique para gerenciar</p>
-                  </div>
-                  <div className="w-14 h-14 bg-gold/20 rounded-full flex items-center justify-center">
-                    <AppIcon type="total-products" size="xl" color="var(--gold-400)" />
-                  </div>
-                </div>
-              </div>
-            )}
+        <PremiumSection 
+          title="Métricas em Tempo Real"
+          subtitle="Acompanhe o desempenho do seu estabelecimento"
+          spacing="normal"
+        >
+          {loading ? (
+            <PremiumGrid cols={4} gap="lg">
+              {[...Array(8)].map((_, i) => (
+                <MetricCard key={i} loading={true} />
+              ))}
+            </PremiumGrid>
+          ) : (
+            <PremiumGrid cols={4} gap="lg">
+              {/* Produtos */}
+              {cardPermissions.totalProducts && (
+                <MetricCard
+                  title="Produtos"
+                  value={realTimeStats.totalProducts}
+                  subtitle="Clique para gerenciar"
+                  color="gold"
+                  icon={<AppIcon type="total-products" size="xl" />}
+                  onClick={() => handleCardClick('products')}
+                />
+              )}
 
-            {/* Pedidos Ativos */}
-            {cardPermissions.activeOrders && (
-              <div 
-                className="card-premium cursor-pointer hover:scale-105 transition-transform"
-                onClick={() => handleCardClick('orders')}
-              >
-                <div className="flex items-center justify-between p-6">
-                  <div>
-                    <p className="text-gold/80 text-sm font-medium">Pedidos Ativos</p>
-                    <p className="text-3xl font-bold text-neon-cyan mt-1">{realTimeStats.activeOrders}</p>
-                    <p className="text-xs text-neon-cyan/60 mt-1">Clique para visualizar</p>
-                  </div>
-                  <div className="w-14 h-14 bg-neon-cyan/20 rounded-full flex items-center justify-center">
-                    <AppIcon type="active-orders" size="xl" color="var(--neon-cyan)" />
-                  </div>
-                </div>
-              </div>
-            )}
+              {/* Pedidos Ativos */}
+              {cardPermissions.activeOrders && (
+                <MetricCard
+                  title="Pedidos Ativos"
+                  value={realTimeStats.activeOrders}
+                  subtitle="Clique para visualizar"
+                  color="cyan"
+                  icon={<AppIcon type="active-orders" size="xl" />}
+                  onClick={() => handleCardClick('orders')}
+                />
+              )}
 
-            {/* Mesas Ocupadas */}
-            {cardPermissions.occupiedTables && (
-              <div 
-                className="card-premium cursor-pointer hover:scale-105 transition-transform"
-                onClick={() => handleCardClick('tables')}
-              >
-                <div className="flex items-center justify-between p-6">
-                  <div>
-                    <p className="text-gold/80 text-sm font-medium">Mesas Ocupadas</p>
-                    <p className="text-3xl font-bold text-neon-green mt-1">{realTimeStats.occupiedTables}</p>
-                    <p className="text-xs text-neon-green/60 mt-1">Clique para visualizar</p>
-                  </div>
-                  <div className="w-14 h-14 bg-neon-green/20 rounded-full flex items-center justify-center">
-                    <AppIcon type="occupied-tables" size="xl" color="var(--neon-green)" />
-                  </div>
-                </div>
-              </div>
-            )}
+              {/* Mesas Ocupadas */}
+              {cardPermissions.occupiedTables && (
+                <MetricCard
+                  title="Mesas Ocupadas"
+                  value={realTimeStats.occupiedTables}
+                  subtitle="Clique para visualizar"
+                  color="green"
+                  icon={<AppIcon type="occupied-tables" size="xl" />}
+                  onClick={() => handleCardClick('tables')}
+                />
+              )}
 
-            {/* Vendas Hoje */}
-            {cardPermissions.todaySales && (
-              <div 
-                className="card-premium cursor-pointer hover:scale-105 transition-transform"
-                onClick={() => handleCardClick('sales')}
-              >
-                <div className="flex items-center justify-between p-6">
-                  <div>
-                    <p className="text-gold/80 text-sm font-medium">Vendas Hoje</p>
-                    <p className="text-3xl font-bold text-neon-purple mt-1">R$ {realTimeStats.todaySales.toFixed(2)}</p>
-                    <p className="text-xs text-neon-purple/60 mt-1">Clique para relatórios</p>
-                  </div>
-                  <div className="w-14 h-14 bg-neon-purple/20 rounded-full flex items-center justify-center">
-                    <AppIcon type="sales" size="xl" color="var(--neon-purple)" />
-                  </div>
-                </div>
-              </div>
-            )}
+              {/* Vendas Hoje */}
+              {cardPermissions.todaySales && (
+                <MetricCard
+                  title="Vendas Hoje"
+                  value={`R$ ${realTimeStats.todaySales.toFixed(2)}`}
+                  subtitle="Clique para relatórios"
+                  color="purple"
+                  trend={12.5}
+                  icon={<AppIcon type="sales" size="xl" />}
+                  onClick={() => handleCardClick('sales')}
+                />
+              )}
+
+              {/* Funcionários */}
+              {cardPermissions.totalEmployees && (
+                <MetricCard
+                  title="Funcionários"
+                  value={realTimeStats.totalEmployees}
+                  subtitle="Ativos no sistema"
+                  color="gold"
+                  icon={<AppIcon type="employees" size="xl" />}
+                  onClick={() => handleCardClick('employees')}
+                />
+              )}
+
+              {/* Pagamentos Pendentes */}
+              {cardPermissions.pendingPayments && (
+                <MetricCard
+                  title="Contas Pendentes"
+                  value={realTimeStats.pendingPayments}
+                  subtitle="Clique para caixa"
+                  color="pink"
+                  icon={<AppIcon type="payments" size="xl" />}
+                  onClick={() => handleCardClick('payments')}
+                />
+              )}
+
+              {/* Itens Vencendo */}
+              {cardPermissions.expiringItems && (
+                <MetricCard
+                  title="Itens Vencendo"
+                  value={realTimeStats.expiringItems}
+                  subtitle="Próximos 7 dias"
+                  color="pink"
+                  icon={<AppIcon type="expiring" size="xl" />}
+                  onClick={() => handleCardClick('expiring')}
+                />
+              )}
+
+              {/* Estoque Baixo */}
+              {cardPermissions.lowStockItems && (
+                <MetricCard
+                  title="Estoque Baixo"
+                  value={realTimeStats.lowStockItems}
+                  subtitle="Requer atenção"
+                  color="pink"
+                  icon={<AppIcon type="low-stock" size="xl" />}
+                  onClick={() => handleCardClick('stock')}
+                />
+              )}
+            </PremiumGrid>
+          )}
+        </PremiumSection>
 
             {/* Funcionários */}
             {cardPermissions.totalEmployees && (
