@@ -143,7 +143,7 @@ const iconMap = {
   'bell': Bell,
   'search': Search,
   'filter': Filter,
-  'refresh': RefreshCw
+  'refresh': RefreshCcw
 };
 
 // Componente Icon principal
