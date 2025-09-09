@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./styles/premium-theme.css";
+@import "./styles/advanced-effects.css";
 
 /* Custom Properties - Legacy Support */
 :root {
