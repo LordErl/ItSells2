@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { StoreProvider } from './contexts/StoreContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import { Toaster } from 'react-hot-toast'
 
 // Components
