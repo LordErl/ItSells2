@@ -633,7 +633,7 @@ export default function AdminDashboard() {
                 onClick={() => navigate('/backup-management')}
                 className="px-4 py-3 bg-indigo-500/20 text-indigo-400 rounded-lg hover:bg-indigo-500/30 transition-colors text-sm font-medium"
               >
-                💾 Gerenciar Backups
+                Gerenciar Backups
               </button>
             )}
           </div>
