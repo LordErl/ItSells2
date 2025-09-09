@@ -9,7 +9,7 @@ import {
   // Products & Inventory  
   Package,
   ShoppingCart,
-  Boxes,
+  Box as Boxes,
   AlertTriangle,
   Clock,
   
@@ -69,7 +69,7 @@ import {
   Bell,
   Search,
   Filter,
-  RefreshCw
+  RefreshCw as RefreshCcw
 } from 'lucide-react';
 
 // Mapeamento de ícones para facilitar o uso
